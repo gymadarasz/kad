@@ -1,0 +1,8 @@
+// SERIAL
+#define SERIAL_BAUDRATE 115200
+
+// SERVER
+#define SERVER_PORT 80
+
+// CLIENT
+#define BASE_PATH "127.0.0.1"
