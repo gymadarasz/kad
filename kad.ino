@@ -64,8 +64,6 @@ void server_init() {
     server.begin();
 }
 
-// TODO errors back to front-end
-
 struct app_current_data_s {
     String oxygen;
     String celsius;
