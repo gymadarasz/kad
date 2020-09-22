@@ -47,12 +47,12 @@ function reload() {
 }
 
 function messageSuccess(resp) {
-    if (resp.responseText) alert(resp.responseText);
+    if (resp.responseText.replace(/\s/g, "X")) alert(resp.responseText);
     else console.info(resp);
 }
 
 function messageFailed(resp) {
-    if (resp.reponseText) alert("ERROR: " + resp.responseText);
+    if (resp.reponseText.replace(/\s/g, "X")) alert("ERROR: " + resp.responseText);
     else console.error(resp);
 }
 
