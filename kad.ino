@@ -13,6 +13,13 @@
 
 // WIFI
 
+typedef void (*cb_delay_callback_func_t)(void);
+
+void cb_delay(long ms, cb_delay_callback_func_t callback = nullptr) {
+    ms += millis();
+    while(millis() < ms) if (callback) callback(); 
+}
+
 char* wifi_get_ssid() {
     return WIFI_SSID; // TODO load from flash
 }
@@ -21,22 +28,22 @@ char* wifi_get_password() {
     return WIFI_PASSWORD; // TODO load from flash
 }
 
-void wifi_connect() {
+void wifi_connect(cb_delay_callback_func_t callback = nullptr) {
     Serial.print("\n\nConnecting to ");
     Serial.println(wifi_get_ssid());
     WiFi.mode(WIFI_STA);
     WiFi.begin(wifi_get_ssid(), wifi_get_password());
     while (WiFi.status() != WL_CONNECTED)
     {
-        delay(500);
+        cb_delay(500, callback);
         Serial.print(".");
     }
     Serial.println(WiFi.localIP());
     Serial.println();
 }
 
-void wifi_stablish() {
-    if (WiFi.status() != WL_CONNECTED) wifi_connect();
+void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
+    if (WiFi.status() != WL_CONNECTED) wifi_connect(callback);
 }
 
 // SERVER
@@ -178,18 +185,29 @@ bool appColourChange() {
     return true;
 }
 
+// app loops
+
+void appLoopConnecting() {
+    // TODO do it while esp re-connecting to wifi
+}
+
+void appLoopConnected() {
+    // TODO do it when wifi connection is established
+}
+
 // SKETCH
 
 void setup()
 {
     Serial.begin(SERIAL_BAUDRATE);
-    wifi_connect();
+    wifi_connect(nullptr);
     server_init();
     app_init();
 }
 
 void loop()
 {
-    wifi_stablish();
+    wifi_stablish(appLoopConnecting);
+    appLoopConnected();
     server.handleClient();
 }
