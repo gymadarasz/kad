@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
+#include <DS18B20.h>
 
 
 #include "config/app_config.h";
@@ -64,6 +65,10 @@ void server_init() {
     server.begin();
 }
 
+#define APP_UNIT_UNSET 0
+#define APP_UNIT_CELSIUS 1
+#define APP_UNIT_FAHRENHEIT 2
+
 struct app_current_data_s {
     String oxygen;
     String celsius;
@@ -71,9 +76,15 @@ struct app_current_data_s {
     String remaining;
 };
 
-struct app_s {
+struct app_user_data_s {
     bool started;
+    int unit;
+    float temperature;
+};
+
+struct app_s {
     app_current_data_s current;
+    app_user_data_s user;
 };
 
 typedef struct app_s app_t;
@@ -81,16 +92,18 @@ typedef struct app_s app_t;
 app_t app;
 
 void app_init() {
-    app.started = false;
     app.current.oxygen = "na.";
     app.current.celsius = "na.";
     app.current.fahrenheit = "na.";
     app.current.remaining = "na.";
+    app.user.started = false;
+    app.user.unit = APP_UNIT_UNSET;
+    app.user.temperature = -1;
 }
 
 void onClientRequestRoot() {
     String resp;
-    if (!app.started) {
+    if (!app.user.started) {
         resp = index_html;
     } else {
         resp = panel_html;
@@ -151,11 +164,13 @@ void onClientRequestColourChange() {
 
 float getTemperatureFromCelsius(float celsius) {
     // TODO calculate absolute temperature value from given celsius value
+    app.user.unit = APP_UNIT_CELSIUS;
     return celsius;
 }
 
 float getTemperatureFromFahrenheit(float fahrenheit) {
     // TODO calculate absolute temperature value from given fahrenheit value
+    app.user.unit = APP_UNIT_FAHRENHEIT;
     return fahrenheit;
 }
 
@@ -163,34 +178,78 @@ float getTemperatureFromFahrenheit(float fahrenheit) {
 
 bool appStart() {
     // TODO start system and return true, if any error occurred returns false
-    app.started = 1;
+    app.user.started = 1;
     return true;
 }
 
 bool appStop() {
     // TODO stop system and return true, if any error occurred returns false
-    app.started = 0;
+    app.user.started = 0;
+    app.user.unit = APP_UNIT_UNSET;
+    doTemperatureStop();
     return true;
 }
 
 bool appSetTemperature(float temperature) {
     // TODO set temperature and return true, if any error occurred returns false
+    app.user.temperature = temperature;
     return true;
 }
 
 bool appColourChange() {
     // TODO change colour and return true, if any error occurred returns false
+    doColourChange();
     return true;
 }
 
 // app loops
 
+void appLoopColourPulse() {
+    // TODO do it while changing colour
+    doTemperatureControl();
+}
+
 void appLoopConnecting() {
     // TODO do it while esp re-connecting to wifi
+    doTemperatureControl();
 }
 
 void appLoopConnected() {
     // TODO do it when wifi connection is established
+    doTemperatureControl();
+}
+
+// TEMPERATURE (DS18B20)
+
+DS18B20 ds(DS_PIN);
+
+void doTemperatureControl() {
+    float celsius = ds.getTempC();
+    float fahrenheit = ds.getTempF();
+    if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
+        float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
+        if (temperature < app.user.temperature) doTemperatureStart();
+        else doTemperatureStop();
+    }
+
+    app.current.celsius = String(celsius);
+    app.current.fahrenheit = String(fahrenheit);
+}
+
+void doTemperatureStart() {
+    digitalWrite(TEMPERATURE_PIN, HIGH);
+}
+
+void doTemperatureStop() {
+    digitalWrite(TEMPERATURE_PIN, LOW);
+}
+
+// COLOUR CHANGE
+
+void doColourChange() {
+    digitalWrite(COLOUR_PIN, HIGH);
+    cb_delay(COLOUR_DELAY, appLoopColourPulse);
+    digitalWrite(COLOUR_PIN, LOW);
 }
 
 // SKETCH
@@ -198,6 +257,7 @@ void appLoopConnected() {
 void setup()
 {
     Serial.begin(SERIAL_BAUDRATE);
+    ds.selectNext();
     wifi_connect(nullptr);
     server_init();
     app_init();

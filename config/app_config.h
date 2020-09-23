@@ -6,3 +6,11 @@
 
 // CLIENT
 #define BASE_PATH "127.0.0.1"
+
+// DS18B20
+#define DS_PIN 2
+
+// APP PINS
+#define COLOUR_PIN 4
+#define COLOUR_DELAY 1000
+#define TEMPERATURE_PIN 5   
