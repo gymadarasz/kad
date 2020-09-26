@@ -6,3 +6,7 @@
 
 // CLIENT
 #define BASE_PATH "127.0.0.1"
+
+// TIMER
+#define WATER_TIMER 30 * 60 * 1000
+#define WATER_FLOW_PIN 10   
