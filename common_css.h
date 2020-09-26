@@ -54,4 +54,27 @@ button:hover {
     text-align: center;
 }
 
+#message {
+    margin: 0; 
+    padding: 20px 40px;
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    -ms-transform: translateX(-50%);
+    transform: translateX(-50%);
+    width: 80%;
+    display: none;
+    text-align: center;
+    border: 1px solid black;
+}
+#message.success {
+    background: lightgreen;
+    color: black;
+}
+
+#message.error {
+    background: red;
+    color: white;
+}
+
 )COMMON_CSS";

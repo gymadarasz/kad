@@ -28,7 +28,7 @@ const char* index_html = R"INDEX_HTML(
             function onStartBtnClick() {
                 hide('panel');
                 show('preloader');
-                apiStart(reload, reload);
+                apiStart(reload);
             }
 
             // USER INTERFACE (VIEWS)

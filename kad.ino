@@ -186,7 +186,7 @@ bool appStop() {
     // TODO stop system and return true, if any error occurred returns false
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
-    doTemperatureStop();
+    doHeatingStop();
     return true;
 }
 
@@ -228,20 +228,22 @@ void doTemperatureControl() {
     float fahrenheit = ds.getTempF();
     if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
         float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
-        if (temperature < app.user.temperature) doTemperatureStart();
-        else doTemperatureStop();
+        if (temperature < app.user.temperature) doHeatingStart();
+        else doHeatingStop();
     }
 
     app.current.celsius = String(celsius);
     app.current.fahrenheit = String(fahrenheit);
 }
 
-void doTemperatureStart() {
-    digitalWrite(TEMPERATURE_PIN, HIGH);
+// heating
+
+void doHeatingStart() {
+    digitalWrite(HEATING_PIN, HIGH);
 }
 
-void doTemperatureStop() {
-    digitalWrite(TEMPERATURE_PIN, LOW);
+void doHeatingStop() {
+    digitalWrite(HEATING_PIN, LOW);
 }
 
 // COLOUR CHANGE

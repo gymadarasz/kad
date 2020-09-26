@@ -150,8 +150,8 @@ const char* panel_html = R"PANEL_HTML(
 
             function onTemperatureSettingsClick() {
                 var temperature = prompt('Please enter a temperature value:');
-                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature, messageSuccess, messageFailed);
-                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature, messageSuccess, messageFailed);
+                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature);
+                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature);
                 else alert('Invalid value should be in between 35 and 45 Celsius or 95 and 104 Fahrenheit');
             }
 
@@ -159,11 +159,11 @@ const char* panel_html = R"PANEL_HTML(
             function onStopBtnClick() {
                 hide('panel');
                 show('preloader');
-                apiStop(reload, reload);
+                apiStop(reload);
             }
 
             function onColourChangeClick() {
-                apiColourChange(messageSuccess, messageFailed);
+                apiColourChange();
             }
 
             function onDocumentLoad() {
@@ -174,7 +174,7 @@ const char* panel_html = R"PANEL_HTML(
                         setCelsusView(r.celsius);
                         setFahrenheitView(r.fahrenheit);
                         setRemainingView(r.remaining);
-                    }, messageFailed);
+                    });
                 }, 5000);
             }
 
