@@ -74,6 +74,7 @@ struct app_current_data_s {
 struct app_s {
     bool started;
     app_current_data_s current;
+    long timerEnd;
 };
 
 typedef struct app_s app_t;
@@ -86,6 +87,9 @@ void app_init() {
     app.current.celsius = "na.";
     app.current.fahrenheit = "na.";
     app.current.remaining = "na.";
+    app.timerEnd = 0;
+
+    pinMode(WATER_FLOW_PIN, OUTPUT);
 }
 
 void onClientRequestRoot() {
@@ -164,12 +168,15 @@ float getTemperatureFromFahrenheit(float fahrenheit) {
 bool appStart() {
     // TODO start system and return true, if any error occurred returns false
     app.started = 1;
+    doTimerStart();
+    doWaterStart();
     return true;
 }
 
 bool appStop() {
     // TODO stop system and return true, if any error occurred returns false
     app.started = 0;
+    doWaterStop();
     return true;
 }
 
@@ -187,11 +194,59 @@ bool appColourChange() {
 
 void appLoopConnecting() {
     // TODO do it while esp re-connecting to wifi
+    doTimerCheck();
+    doWaterCheck();
 }
 
 void appLoopConnected() {
     // TODO do it when wifi connection is established
+    doTimerCheck();
+    doWaterCheck();
 }
+
+// timer
+
+void doTimerStart() {
+    app.timerEnd = millis() + WATER_TIMER;
+}
+
+void doTimerCheck() {
+    int mins = 0;
+    int secs = 0;
+    long lefts = app.timerEnd - millis();
+    if (lefts <= 0) {
+        app.timerEnd = millis(); // block timer over turn
+        doWaterStop();
+    } else {
+        mins = lefts / (60 * 1000);
+        secs = lefts % (60 * 1000) / 1000;;
+    }
+
+    size_t size = 10;
+    char buff[size] = {0};
+    snprintf(buff, size, "%02d:%02d", mins, secs);
+    app.current.remaining = buff;
+}
+
+// water infill
+
+void doWaterStart() {
+    digitalWrite(WATER_FLOW_PIN, HIGH);
+}
+
+void doWaterStop() {
+    digitalWrite(WATER_FLOW_PIN, LOW);
+}
+
+// water level sensor
+
+void doWaterCheck() {
+    if (!digitalRead(WATER_SENSOR_PIN)) {
+        doWaterStop();
+    }
+}
+
+
 
 // SKETCH
 
