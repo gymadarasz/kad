@@ -166,6 +166,11 @@ const char* panel_html = R"PANEL_HTML(
                 apiColourChange(messageSuccess, messageFailed);
             }
 
+            function onTimerSettingsClick() {
+                var timer = prompt('Please enter a timer value in minutes:');
+                apiSetTimer(timer);
+            }
+
             function onDocumentLoad() {
                 setInterval(function() {
                     apiGetData(function(resp) {
@@ -221,6 +226,12 @@ const char* panel_html = R"PANEL_HTML(
             function apiStop(success, failure) {
                 ajax("GET", "/stop", {}, success, failure);
             }
+
+            function apiSetTimer(timer, success, failure) {
+                ajax("GET", "/set-timer", {
+                    'timer': timer
+                }, success, failure);
+            }
             
         </script>
     </head>
@@ -267,7 +278,7 @@ const char* panel_html = R"PANEL_HTML(
                 </div>
             </div>
 
-            <div class="tile">
+            <div class="tile pointer" onclick="onTimerSettingsClick()">
                 <h1>REMAINING UNTIL THE BATH</h1>
                 <div class="monitor large">
                     <div class="middle">

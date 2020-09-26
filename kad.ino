@@ -58,6 +58,7 @@ void server_init() {
     server.on("/set-celsius", onClientRequestSetCelsius);
     server.on("/set-fahrenheit", onClientRequestSetFahrenheit);
     server.on("/change-colour", onClientRequestColourChange);
+    server.on("/set-timer", onClientRequestSetTimre);
     server.onNotFound([]() {
         server.send(404, "text/plain", "Not Found\n\n");
     });
@@ -143,10 +144,18 @@ void onClientRequestSetFahrenheit() {
         else server.send(200, "text/plain", "OK\n\n");
     }
 }
-
+ 
 void onClientRequestColourChange() {
     if (!appColourChange()) server.send(400, "text/plain", "Colour change failed\n\n");
     else server.send(200, "text/plain", "OK\n\n");
+}
+
+void onClientRequestSetTimer() {
+    if (!server.hasArg("timer")) server.send(400, "text/plain", "Timer argument is missing\n\n");
+    else {
+        app.timerEnd = millis() + server.arg("timer").toInt() * 60 * 1000;
+        server.send(200, "text/plain", "OK\n\n");
+    }
 }
 
 // helpers
