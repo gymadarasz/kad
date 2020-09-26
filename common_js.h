@@ -56,11 +56,14 @@ function message(msg, type) {
 }
 
 function messageSuccess(resp) {
-    message((resp.responseText ? resp.responseText : "OK"), 'success');
+    var msg = resp.responseText.replace(/\s/g, "X");
+    if (msg) message(msg, 'success');
+    else console.info(resp);
 }
 
 function messageFailed(resp) {
-    message("ERROR: " + (resp.responseText ? resp.responseText : "ERROR"), 'error');
+    var msg = resp.responseText.replace(/\s/g, "X");
+    message(msg ? msg : "ERROR", 'error');
 }
 
 )COMMON_JS";

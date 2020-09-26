@@ -51,6 +51,16 @@ void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
 
 WebServer server(SERVER_PORT);
 
+void serverSend(int code, const char* content_type, const String& content) {
+    Serial.print("Server Respond sending: ");
+    Serial.print(code);
+    Serial.print(" - (");
+    Serial.print(content_type);
+    Serial.println(")");
+    Serial.println(content);
+    serverSend(code, content_type, content);
+}
+
 void server_init() {
     server.on("/", onClientRequestRoot);
     server.on("/start", onClientRequestStart);
@@ -60,7 +70,7 @@ void server_init() {
     server.on("/set-fahrenheit", onClientRequestSetFahrenheit);
     server.on("/change-colour", onClientRequestColourChange);
     server.onNotFound([]() {
-        server.send(404, "text/plain", "Not Found\n\n");
+        serverSend(404, "text/plain", "Not Found\n\n");
     });
     server.begin();
 }
@@ -117,16 +127,16 @@ void onClientRequestRoot() {
     resp.replace("{{ common_css }}", common_css);
     resp.replace("{{ common_js }}", common_js);
     resp.replace("{{ common_html }}", common_html);
-    server.send(200, "text/html", resp);
+    serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {
-    if (!appStart()) server.send(400, "text/plain", "Start failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    if (!appStart()) serverSend(400, "text/plain", "Start failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestStop() {
-    if (!appStop()) server.send(400, "text/plain", "Stop failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
@@ -140,30 +150,30 @@ void onClientRequestGetData() {
     resp.replace("{{ celsius }}", app.current.celsius);
     resp.replace("{{ fahrenheit }}", app.current.fahrenheit);
     resp.replace("{{ remaining }}", app.current.remaining);
-    server.send(200, "text/json", resp);
+    serverSend(200, "text/json", resp);
 }
 
 void onClientRequestSetCelsius() {
-    if (!server.hasArg("celsius")) server.send(400, "text/plain", "Celsius argument is missing\n\n");
+    if (!server.hasArg("celsius")) serverSend(400, "text/plain", "Celsius argument is missing\n\n");
     else {
         int temperature = getTemperatureFromCelsius(server.arg("celsius").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
 
 void onClientRequestSetFahrenheit() {
-    if (!server.hasArg("fahrenheit")) server.send(400, "text/plain", "Fahrenheit argument is missing\n\n");
+    if (!server.hasArg("fahrenheit")) serverSend(400, "text/plain", "Fahrenheit argument is missing\n\n");
     else {
         int temperature = getTemperatureFromFahrenheit(server.arg("fahrenheit").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
 
 void onClientRequestColourChange() {
-    if (!appColourChange()) server.send(400, "text/plain", "Colour change failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    if (!appColourChange()) serverSend(400, "text/plain", "Colour change failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 // helpers
