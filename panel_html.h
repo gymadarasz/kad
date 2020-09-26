@@ -150,8 +150,18 @@ const char* panel_html = R"PANEL_HTML(
 
             function onTemperatureSettingsClick() {
                 var temperature = prompt('Please enter a temperature value:');
-                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature);
-                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature);
+                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature, function() {
+                    localStorage.setItem('temperature', temperature);
+                    localStorage.setItem('unit', 'celsius');
+                    setTemperatureView(temperature);
+                    setUnitView('&#176;C');
+                });
+                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature, function() {
+                    localStorage.setItem('temperature', temperature);
+                    localStorage.setItem('unit', 'fahrenheit');
+                    setTemperatureView(temperature);
+                    setUnitView('&#176;F');
+                });
                 else alert('Invalid value should be in between 35 and 45 Celsius or 95 and 104 Fahrenheit');
             }
 
@@ -167,6 +177,7 @@ const char* panel_html = R"PANEL_HTML(
             }
 
             function onDocumentLoad() {
+                
                 setInterval(function() {
                     apiGetData(function(resp) {
                         r = JSON.parse(resp.responseText);
@@ -176,6 +187,23 @@ const char* panel_html = R"PANEL_HTML(
                         setRemainingView(r.remaining);
                     });
                 }, 5000);
+
+
+                // set default temperature and unit to user preset
+
+                var unit = localStorage.getItem('unit');
+                var temperature = localStorage.getItem('temperature');
+                if (unit == 'celsius') {
+                    apiSetCelsius(temperature);
+                    setTemperatureView(temperature);
+                    setUnitView('&#176;C');
+                } else if (unit == 'fahrenheit') {
+                    apiSetFahrenheit(temperature);
+                    setTemperatureView(temperature);
+                    setUnitView('&#176;F');
+                } else {
+                    console.warn('temperature unit is unknown: ', unit);
+                }
             }
 
             // USER INTERFACE (VIEWS)
@@ -234,6 +262,9 @@ const char* panel_html = R"PANEL_HTML(
                     <div class="top">
                         <span>40</span>&#176;C<br>
                         <span>104</span>&#176;F
+                    </div>
+                    <div class="middle">
+                        <span id="temperature">...</span><span id="unit">...</span>
                     </div>
                     <div class="bottom">
                         <span>35</span>&#176;C<br>

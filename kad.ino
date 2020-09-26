@@ -99,6 +99,9 @@ void app_init() {
     app.user.started = false;
     app.user.unit = APP_UNIT_UNSET;
     app.user.temperature = -1;
+    
+    pinMode(COLOUR_PIN, OUTPUT);
+    pinMode(HEATING_PIN, OUTPUT);
 }
 
 void onClientRequestRoot() {
