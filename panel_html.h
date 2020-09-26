@@ -169,7 +169,7 @@ const char* panel_html = R"PANEL_HTML(
             function onStopBtnClick() {
                 hide('panel');
                 show('preloader');
-                apiStop(reload);
+                apiStop(reload, reload);
             }
 
             function onColourChangeClick() {

@@ -52,13 +52,13 @@ void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
 WebServer server(SERVER_PORT);
 
 void serverSend(int code, const char* content_type, const String& content) {
-    Serial.print("Server Respond sending: ");
-    Serial.print(code);
-    Serial.print(" - (");
-    Serial.print(content_type);
-    Serial.println(")");
-    Serial.println(content);
-    serverSend(code, content_type, content);
+    // Serial.print("Server Respond sending: ");
+    // Serial.print(code);
+    // Serial.print(" - (");
+    // Serial.print(content_type);
+    // Serial.println(")");
+    // Serial.println(content);
+    server.send(code, content_type, content);
 }
 
 void server_init() {
