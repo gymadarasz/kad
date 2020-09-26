@@ -1,0 +1,13 @@
+// SERIAL
+#define SERIAL_BAUDRATE 115200
+
+// SERVER
+#define SERVER_PORT 80
+
+// DS18B20
+#define DS_PIN 19
+
+// APP PINS
+#define COLOUR_PIN 4
+#define COLOUR_DELAY 1000
+#define TEMPERATURE_PIN 18
