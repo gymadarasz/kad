@@ -241,7 +241,7 @@ void doWaterStop() {
 // water level sensor
 
 void doWaterCheck() {
-    if (digitalRead(WATER_SENSOR_PIN)) {
+    if (!digitalRead(WATER_SENSOR_PIN)) {
         doWaterStop();
     }
 }
