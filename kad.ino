@@ -118,6 +118,7 @@ void app_init() {
 }
 
 void onClientRequestRoot() {
+    Serial.println("Requested call: onClientRequestRoot");
     String resp;
     if (!app.user.started) {
         resp = index_html;
@@ -130,16 +131,19 @@ void onClientRequestRoot() {
     serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {
+    Serial.println("Requested call: onClientRequestStart");
     if (!appStart()) serverSend(400, "text/plain", "Start failed\n\n");
     else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestStop() {
+    Serial.println("Requested call: onClientRequestStop");
     if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
     else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
+    Serial.println("Requested call: onClientRequestGetData");
     String resp(R"RESPONSE_JSON({
         "oxygen": "{{ oxygen }}",
         "celsius": "{{ celsius }}",
@@ -154,6 +158,7 @@ void onClientRequestGetData() {
 }
 
 void onClientRequestSetCelsius() {
+    Serial.println("Requested call: onClientRequestSetCelsius");
     if (!server.hasArg("celsius")) serverSend(400, "text/plain", "Celsius argument is missing\n\n");
     else {
         int temperature = getTemperatureFromCelsius(server.arg("celsius").toFloat());
@@ -163,6 +168,7 @@ void onClientRequestSetCelsius() {
 }
 
 void onClientRequestSetFahrenheit() {
+    Serial.println("Requested call: onClientRequestSetFahrenheit");
     if (!server.hasArg("fahrenheit")) serverSend(400, "text/plain", "Fahrenheit argument is missing\n\n");
     else {
         int temperature = getTemperatureFromFahrenheit(server.arg("fahrenheit").toFloat());
@@ -172,6 +178,7 @@ void onClientRequestSetFahrenheit() {
 }
 
 void onClientRequestColourChange() {
+    Serial.println("Requested call: onClientRequestColourChange");
     if (!appColourChange()) serverSend(400, "text/plain", "Colour change failed\n\n");
     else serverSend(200, "text/plain", "OK\n\n");
 }
