@@ -13,7 +13,7 @@ const char* panel_html = R"PANEL_HTML(
 
             h1 { 
                 text-shadow: 0px 0px 10px rgba(150, 150, 150, 1);
-                min-height: 2.5em;
+                min-height: 3.5em;
             }
 
             .tile {
