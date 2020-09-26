@@ -169,12 +169,14 @@ bool appStart() {
     // TODO start system and return true, if any error occurred returns false
     app.started = 1;
     doTimerStart();
+    doWaterStart();
     return true;
 }
 
 bool appStop() {
     // TODO stop system and return true, if any error occurred returns false
     app.started = 0;
+    doWaterStop();
     return true;
 }
 
@@ -193,18 +195,19 @@ bool appColourChange() {
 void appLoopConnecting() {
     // TODO do it while esp re-connecting to wifi
     doTimerCheck();
+    doWaterCheck();
 }
 
 void appLoopConnected() {
     // TODO do it when wifi connection is established
     doTimerCheck();
+    doWaterCheck();
 }
 
 // timer
 
 void doTimerStart() {
     app.timerEnd = millis() + WATER_TIMER;
-    doWaterStart();
 }
 
 void doTimerCheck() {
@@ -215,20 +218,17 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterStop();
     } else {
-        int mins = lefts / (60 * 1000);
-        int secs = lefts % (60 * 1000);
+        mins = lefts / (60 * 1000);
+        secs = lefts % (60 * 1000) / 1000;;
     }
 
-    String remaining("");
-    remaining += mins < 10 ? "0" : "";
-    remaining += String(mins);
-    remaining += ":";
-    remaining += secs < 10 ? "0" : "";
-    remaining += String(secs);
-    app.current.remaining = remaining; 
+    size_t size = 10;
+    char buff[size] = {0};
+    snprintf(buff, size, "%02d:%02d", mins, secs);
+    app.current.remaining = buff;
 }
 
-// water flow
+// water infill
 
 void doWaterStart() {
     digitalWrite(WATER_FLOW_PIN, HIGH);
@@ -236,6 +236,14 @@ void doWaterStart() {
 
 void doWaterStop() {
     digitalWrite(WATER_FLOW_PIN, LOW);
+}
+
+// water level sensor
+
+void doWaterCheck() {
+    if (digitalRead(WATER_SENSOR_PIN)) {
+        doWaterStop();
+    }
 }
 
 
