@@ -1,10 +1,11 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
+#include <DS18B20.h>
+#include "EEPROM.h"
 
 
 #include "config/app_config.h";
-#include "config/wifi_config.h";
 #include "common_css.h";
 #include "common_js.h";
 #include "common_html.h";
@@ -15,24 +16,30 @@
 
 typedef void (*cb_delay_callback_func_t)(void);
 
+struct wifi_credentials_s {
+    String ssid;
+    String password;  
+};
+
+typedef struct wifi_credentials_s wifi_credentials_t;
+
 void cb_delay(long ms, cb_delay_callback_func_t callback = nullptr) {
     ms += millis();
     while(millis() < ms) if (callback) callback(); 
 }
 
-char* wifi_get_ssid() {
-    return WIFI_SSID; // TODO load from flash
-}
-
-char* wifi_get_password() {
-    return WIFI_PASSWORD; // TODO load from flash
-}
+wifi_credentials_t wifi_credentials;
 
 void wifi_connect(cb_delay_callback_func_t callback = nullptr) {
     Serial.print("\n\nConnecting to ");
-    Serial.println(wifi_get_ssid());
+    Serial.println(wifi_credentials.ssid);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(wifi_get_ssid(), wifi_get_password());
+    int strl = 100;
+    char ssid_buff[strl];
+    char password_buff[strl];
+    wifi_credentials.ssid.toCharArray(ssid_buff, strl);
+    wifi_credentials.password.toCharArray(password_buff, strl);
+    WiFi.begin(ssid_buff, password_buff);
     while (WiFi.status() != WL_CONNECTED)
     {
         cb_delay(500, callback);
@@ -50,6 +57,12 @@ void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
 
 WebServer server(SERVER_PORT);
 
+void serverSend(int code, const char* content_type, const String& content) {
+    Serial.print("Server Respond sending: ");
+    Serial.println(code);
+    server.send(code, content_type, content);
+}
+
 void server_init() {
     server.on("/", onClientRequestRoot);
     server.on("/start", onClientRequestStart);
@@ -58,11 +71,16 @@ void server_init() {
     server.on("/set-celsius", onClientRequestSetCelsius);
     server.on("/set-fahrenheit", onClientRequestSetFahrenheit);
     server.on("/change-colour", onClientRequestColourChange);
+    server.on("/set-timer", onClientRequestSetTimer);
     server.onNotFound([]() {
-        server.send(404, "text/plain", "Not Found\n\n");
+        serverSend(404, "text/plain", "Not Found\n\n");
     });
     server.begin();
 }
+
+#define APP_UNIT_UNSET 0
+#define APP_UNIT_CELSIUS 1
+#define APP_UNIT_FAHRENHEIT 2
 
 struct app_current_data_s {
     String oxygen;
@@ -71,10 +89,17 @@ struct app_current_data_s {
     String remaining;
 };
 
-struct app_s {
+struct app_user_data_s {
     bool started;
+    int unit;
+    float temperature;
+};
+
+struct app_s {
     app_current_data_s current;
+    app_user_data_s user;
     long timerEnd;
+    long lastSensorsCheck;
 };
 
 typedef struct app_s app_t;
@@ -82,19 +107,27 @@ typedef struct app_s app_t;
 app_t app;
 
 void app_init() {
-    app.started = false;
     app.current.oxygen = "na.";
     app.current.celsius = "na.";
     app.current.fahrenheit = "na.";
     app.current.remaining = "na.";
+    app.user.started = false;
+    app.user.unit = APP_UNIT_UNSET;
+    app.user.temperature = -1;
     app.timerEnd = 0;
-
+    app.lastSensorsCheck = 0;
+    
+    pinMode(COLOUR_PIN, OUTPUT);
+    pinMode(HEATING_PIN, OUTPUT);
+    pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
+    pinMode(WIFI_SETUP_PIN, INPUT);
 }
 
 void onClientRequestRoot() {
+    Serial.println("Requested call: onClientRequestRoot");
     String resp;
-    if (!app.started) {
+    if (!app.user.started) {
         resp = index_html;
     } else {
         resp = panel_html;
@@ -102,19 +135,27 @@ void onClientRequestRoot() {
     resp.replace("{{ common_css }}", common_css);
     resp.replace("{{ common_js }}", common_js);
     resp.replace("{{ common_html }}", common_html);
-    server.send(200, "text/html", resp);
+    resp.replace("{{ APP_DATA_REFRESH_PERIOD }}", String(APP_DATA_REFRESH_PERIOD));
+    resp.replace("{{ APP_CELSIUS_MIN }}", String(APP_CELSIUS_MIN));
+    resp.replace("{{ APP_CELSIUS_MAX }}", String(APP_CELSIUS_MAX));
+    resp.replace("{{ APP_FAHRENHEIT_MIN }}", String(APP_FAHRENHEIT_MIN));
+    resp.replace("{{ APP_FAHRENHEIT_MAX }}", String(APP_FAHRENHEIT_MAX));
+    serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {
-    if (!appStart()) server.send(400, "text/plain", "Start failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestStart");
+    if (!appStart()) serverSend(400, "text/plain", "Start failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestStop() {
-    if (!appStop()) server.send(400, "text/plain", "Stop failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestStop");
+    if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
+    Serial.println("Requested call: onClientRequestGetData");
     String resp(R"RESPONSE_JSON({
         "oxygen": "{{ oxygen }}",
         "celsius": "{{ celsius }}",
@@ -125,83 +166,160 @@ void onClientRequestGetData() {
     resp.replace("{{ celsius }}", app.current.celsius);
     resp.replace("{{ fahrenheit }}", app.current.fahrenheit);
     resp.replace("{{ remaining }}", app.current.remaining);
-    server.send(200, "text/json", resp);
+    serverSend(200, "text/json", resp);
 }
 
 void onClientRequestSetCelsius() {
-    if (!server.hasArg("celsius")) server.send(400, "text/plain", "Celsius argument is missing\n\n");
+    Serial.println("Requested call: onClientRequestSetCelsius");
+    if (!server.hasArg("celsius")) serverSend(400, "text/plain", "Celsius argument is missing\n\n");
     else {
         int temperature = getTemperatureFromCelsius(server.arg("celsius").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
 
 void onClientRequestSetFahrenheit() {
-    if (!server.hasArg("fahrenheit")) server.send(400, "text/plain", "Fahrenheit argument is missing\n\n");
+    Serial.println("Requested call: onClientRequestSetFahrenheit");
+    if (!server.hasArg("fahrenheit")) serverSend(400, "text/plain", "Fahrenheit argument is missing\n\n");
     else {
         int temperature = getTemperatureFromFahrenheit(server.arg("fahrenheit").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
-
+ 
 void onClientRequestColourChange() {
-    if (!appColourChange()) server.send(400, "text/plain", "Colour change failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestColourChange");
+    if (!appColourChange()) serverSend(400, "text/plain", "Colour change failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
+}
+
+void onClientRequestSetTimer() {
+    if (!server.hasArg("timer")) server.send(400, "text/plain", "Timer argument is missing\n\n");
+    else {
+        app.timerEnd = millis() + server.arg("timer").toInt() * 60 * 1000;
+        server.send(200, "text/plain", "OK\n\n");
+    }
 }
 
 // helpers
 
 float getTemperatureFromCelsius(float celsius) {
-    // TODO calculate absolute temperature value from given celsius value
+    app.user.unit = APP_UNIT_CELSIUS;
     return celsius;
 }
 
 float getTemperatureFromFahrenheit(float fahrenheit) {
-    // TODO calculate absolute temperature value from given fahrenheit value
+    app.user.unit = APP_UNIT_FAHRENHEIT;
     return fahrenheit;
 }
 
 // app callbacks
 
 bool appStart() {
-    // TODO start system and return true, if any error occurred returns false
-    app.started = 1;
+    app.user.started = 1;
+    doWaterFlowClose();
+    doWaterFillStart();
     doTimerStart();
-    doWaterStart();
     return true;
 }
 
 bool appStop() {
-    // TODO stop system and return true, if any error occurred returns false
-    app.started = 0;
-    doWaterStop();
+    app.user.started = 0;
+    app.user.unit = APP_UNIT_UNSET;
+    doHeatingStop();
+    doWaterFillStop();
+    doWaterFlowOpen();
     return true;
 }
 
 bool appSetTemperature(float temperature) {
-    // TODO set temperature and return true, if any error occurred returns false
+    app.user.temperature = temperature;
     return true;
 }
 
 bool appColourChange() {
-    // TODO change colour and return true, if any error occurred returns false
+    doColourChange();
     return true;
 }
 
 // app loops
 
+void appLoopColourPulse() {
+    appLoopAll();
+}
+
 void appLoopConnecting() {
-    // TODO do it while esp re-connecting to wifi
+    appLoopAll();
+}
+
+void appLoopConnected() {
+    appLoopAll();
+}
+
+void appLoopAll() {
+    doSensorsCheck();
     doTimerCheck();
     doWaterCheck();
 }
 
-void appLoopConnected() {
-    // TODO do it when wifi connection is established
-    doTimerCheck();
-    doWaterCheck();
+// OXYGEN SENSOR
+
+String doOxygenRead() {
+    String ret("");
+    while (OXIGEN_SERIAL.available()) {
+        ret = OXIGEN_SERIAL.readStringUntil(13);
+    }
+    return ret;
+}
+
+// TEMPERATURE (DS18B20)
+
+DS18B20 ds(DS_PIN);
+
+void doSensorsCheck() {
+    long sensorsCheckTime = millis() / SENSOR_CHECK_PERIOD;
+    if (sensorsCheckTime != app.lastSensorsCheck) {
+        app.lastSensorsCheck = sensorsCheckTime;
+
+        float celsius = ds.getTempC();
+        float fahrenheit = ds.getTempF();
+        
+        doTemperatureControl(celsius, fahrenheit);
+
+        app.current.celsius = String(celsius);
+        app.current.fahrenheit = String(fahrenheit);
+
+        String oxygen = doOxygenRead();
+        if (oxygen != "") app.current.oxygen = oxygen;
+    }
+}
+
+void doTemperatureControl(float celsius, float fahrenheit) {
+    if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
+        float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
+        if (temperature < app.user.temperature) doHeatingStart();
+        else doHeatingStop();
+    }
+}
+
+// heating
+
+void doHeatingStart() {
+    digitalWrite(HEATING_PIN, HEATING_ON);
+}
+
+void doHeatingStop() {
+    digitalWrite(HEATING_PIN, HEATING_OFF);
+}
+
+// COLOUR CHANGE
+
+void doColourChange() {
+    digitalWrite(COLOUR_PIN, COLOUR_ON);
+    cb_delay(COLOUR_DELAY, appLoopColourPulse);
+    digitalWrite(COLOUR_PIN, COLOUR_OFF);
 }
 
 // timer
@@ -216,7 +334,8 @@ void doTimerCheck() {
     long lefts = app.timerEnd - millis();
     if (lefts <= 0) {
         app.timerEnd = millis(); // block timer over turn
-        doWaterStop();
+        doWaterFillStop();
+        doHeatingStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
@@ -230,32 +349,85 @@ void doTimerCheck() {
 
 // water infill
 
-void doWaterStart() {
-    digitalWrite(WATER_FLOW_PIN, HIGH);
+void doWaterFillStart() {
+    digitalWrite(WATER_FILL_PIN, WATER_FILL_ON);
 }
 
-void doWaterStop() {
-    digitalWrite(WATER_FLOW_PIN, LOW);
+void doWaterFillStop() {
+    digitalWrite(WATER_FILL_PIN, WATER_FILL_OFF);
 }
 
 // water level sensor
 
 void doWaterCheck() {
     if (!digitalRead(WATER_SENSOR_PIN)) {
-        doWaterStop();
+        doWaterFillStop();
     }
 }
 
+// water flow out
 
+void doWaterFlowClose() {
+    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_ON);
+}
+
+void doWaterFlowOpen() {
+    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_OFF);
+}
+
+// EEPROM (for wifi ssid/password)
+
+void eeprom_init(long size = 1000) {
+    if (!EEPROM.begin(size)) {
+        Serial.println("EEPROM init failure.");
+        ESP.restart();
+    }
+}
+
+void wifi_credentials_load(long addr = 0) {
+    wifi_credentials.ssid = EEPROM.readString(addr);
+    addr += wifi_credentials.ssid.length() + 1;
+    wifi_credentials.password = EEPROM.readString(addr);
+}
+
+void wifi_credentials_store(long addr, String ssid, String password) {
+    EEPROM.writeString(addr, ssid);
+    addr += ssid.length() + 1;
+    EEPROM.writeString(addr, password);
+    EEPROM.commit();
+}
+
+void wifi_setup() {
+    const long idelay = 300;
+    const long wifiaddr = 0;
+    if (digitalRead(WIFI_SETUP_PIN) == WIFI_SETUP_ON) {
+        Serial.println("Type WiFi SSID:");
+        while (!Serial.available()) delay(idelay);
+        String ssid = Serial.readString();
+        ssid.trim();
+        Serial.println("Type WiFi Password:");
+        while (!Serial.available()) delay(idelay);
+        String password = Serial.readString();
+        password.trim();
+        wifi_credentials_store(wifiaddr, ssid, password);
+        Serial.println("Credentials are saved, press reset to restart..");
+        while(true);
+    }
+    wifi_credentials_load(wifiaddr);
+}
 
 // SKETCH
 
 void setup()
 {
+    app_init();
     Serial.begin(SERIAL_BAUDRATE);
+    eeprom_init();
+    wifi_setup();
+    OXIGEN_SERIAL.begin(OXIGEN_SERIAL_BAUDRATE);
+    ds.selectNext();
     wifi_connect(nullptr);
     server_init();
-    app_init();
 }
 
 void loop()

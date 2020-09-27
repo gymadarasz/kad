@@ -1,0 +1,51 @@
+// SERIAL
+#define SERIAL_BAUDRATE 115200          // app serial port speed
+
+// SERVER
+#define SERVER_PORT 80                  // http server port
+
+// DS18B20
+#define DS_PIN 19                       // input
+#define SENSOR_CHECK_PERIOD 5000        // sensors checking period (ms)
+
+// APP
+#define APP_DATA_REFRESH_PERIOD 5000    // front-end refresh data request period (ms)
+#define APP_CELSIUS_MIN 35              // temperature validation
+#define APP_CELSIUS_MAX 45
+#define APP_FAHRENHEIT_MIN 95
+#define APP_FAHRENHEIT_MAX 104
+
+#define WIFI_SETUP_PIN 23   // input
+#define WIFI_SETUP_ON LOW   // wifi setup mode
+#define WIFI_SETUP_OFF HIGH // normal workstation mode
+
+// COLOUR CHANGE
+#define COLOUR_PIN 4        // output
+#define COLOUR_DELAY 1000   // pulse length
+#define COLOUR_ON HIGH      // pulse start
+#define COLOUR_OFF LOW      // pulse stop
+
+// HEATING
+#define HEATING_PIN 18      // output
+#define HEATING_ON HIGH     // start
+#define HEATING_OFF LOW     // stop
+
+// TIMER
+#define WATER_TIMER 60 * 60 * 1000      // default count down timer length
+
+// WATER FILL
+#define WATER_FILL_PIN 15       // output
+#define WATER_FILL_ON HIGH      // start
+#define WATER_FILL_OFF LOW      // stop
+
+// WATER LEVEL SENSOR
+#define WATER_SENSOR_PIN 22     // input
+
+// WATER FLOW
+#define WATER_FLOW_PIN 2        // output
+#define WATER_FLOW_ON HIGH      // close
+#define WATER_FLOW_OFF LOW      // open
+
+// OXYGEN
+#define OXIGEN_SERIAL Serial2           // hardware serial port class
+#define OXIGEN_SERIAL_BAUDRATE 9600     // sensor communication speed
