@@ -6,6 +6,10 @@
 
 // DS18B20
 #define DS_PIN 19           // input
+#define DS_CHECK_PERIOD 5000
+
+// APP
+#define APP_DATA_REFRESH_PERIOD 5000
 
 // COLOUR CHANGE
 #define COLOUR_PIN 4        // output

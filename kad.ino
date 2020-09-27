@@ -96,6 +96,7 @@ struct app_s {
     app_current_data_s current;
     app_user_data_s user;
     long timerEnd;
+    long lastTemperatureCheck;
 };
 
 typedef struct app_s app_t;
@@ -111,6 +112,7 @@ void app_init() {
     app.user.unit = APP_UNIT_UNSET;
     app.user.temperature = -1;
     app.timerEnd = 0;
+    app.lastTemperatureCheck = 0;
     
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
@@ -128,6 +130,7 @@ void onClientRequestRoot() {
     resp.replace("{{ common_css }}", common_css);
     resp.replace("{{ common_js }}", common_js);
     resp.replace("{{ common_html }}", common_html);
+    resp.replace("{{ APP_DATA_REFRESH_PERIOD }}", String(APP_DATA_REFRESH_PERIOD));
     serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {
@@ -253,16 +256,20 @@ void appLoopAll() {
 DS18B20 ds(DS_PIN);
 
 void doTemperatureControl() {
-    float celsius = ds.getTempC();
-    float fahrenheit = ds.getTempF();
-    if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
-        float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
-        if (temperature < app.user.temperature) doHeatingStart();
-        else doHeatingStop();
-    }
+    long temperatureCheckTime = millis() / DS_CHECK_PERIOD;
+    if (temperatureCheckTime != app.lastTemperatureCheck) {
+        app.lastTemperatureCheck = temperatureCheckTime;
+        float celsius = ds.getTempC();
+        float fahrenheit = ds.getTempF();
+        if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
+            float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
+            if (temperature < app.user.temperature) doHeatingStart();
+            else doHeatingStop();
+        }
 
-    app.current.celsius = String(celsius);
-    app.current.fahrenheit = String(fahrenheit);
+        app.current.celsius = String(celsius);
+        app.current.fahrenheit = String(fahrenheit);
+    }
 }
 
 // heating

@@ -186,7 +186,7 @@ const char* panel_html = R"PANEL_HTML(
                         setFahrenheitView(r.fahrenheit);
                         setRemainingView(r.remaining);
                     });
-                }, 5000);
+                }, {{ APP_DATA_REFRESH_PERIOD }});
 
 
                 // set default temperature and unit to user preset

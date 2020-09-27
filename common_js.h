@@ -63,7 +63,8 @@ function messageSuccess(resp) {
 
 function messageFailed(resp) {
     var msg = resp.responseText.replace(/\s/g, "X");
-    message(msg ? msg : "ERROR", 'error');
+    if (msg) message(msg, 'error');
+    else console.error(resp);
 }
 
 )COMMON_JS";
