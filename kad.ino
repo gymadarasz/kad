@@ -276,7 +276,7 @@ String doOxygenRead() {
 DS18B20 ds(DS_PIN);
 
 void doSensorsCheck() {
-    long sensorsCheckTime = millis() / DS_CHECK_PERIOD;
+    long sensorsCheckTime = millis() / SENSOR_CHECK_PERIOD;
     if (sensorsCheckTime != app.lastSensorsCheck) {
         app.lastSensorsCheck = sensorsCheckTime;
 
@@ -304,19 +304,19 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 // heating
 
 void doHeatingStart() {
-    digitalWrite(HEATING_PIN, HIGH);
+    digitalWrite(HEATING_PIN, HEATING_ON);
 }
 
 void doHeatingStop() {
-    digitalWrite(HEATING_PIN, LOW);
+    digitalWrite(HEATING_PIN, HEATING_OFF);
 }
 
 // COLOUR CHANGE
 
 void doColourChange() {
-    digitalWrite(COLOUR_PIN, HIGH);
+    digitalWrite(COLOUR_PIN, COLOUR_ON);
     cb_delay(COLOUR_DELAY, appLoopColourPulse);
-    digitalWrite(COLOUR_PIN, LOW);
+    digitalWrite(COLOUR_PIN, COLOUR_OFF);
 }
 
 // timer
@@ -347,11 +347,11 @@ void doTimerCheck() {
 // water infill
 
 void doWaterFillStart() {
-    digitalWrite(WATER_FILL_PIN, HIGH);
+    digitalWrite(WATER_FILL_PIN, WATER_FILL_ON);
 }
 
 void doWaterFillStop() {
-    digitalWrite(WATER_FILL_PIN, LOW);
+    digitalWrite(WATER_FILL_PIN, WATER_FILL_OFF);
 }
 
 // water level sensor
@@ -365,11 +365,11 @@ void doWaterCheck() {
 // water flow out
 
 void doWaterFlowClose() {
-    digitalWrite(WATER_FLOW_PIN, HIGH);
+    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_ON);
 }
 
 void doWaterFlowOpen() {
-    digitalWrite(WATER_FLOW_PIN, LOW);
+    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_OFF);
 }
 
 
