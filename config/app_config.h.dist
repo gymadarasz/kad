@@ -22,7 +22,7 @@
 #define WATER_TIMER 30 * 60 * 1000
 
 // WATER FILL
-#define WATER_FLOW_PIN 10   // output
+#define WATER_FLOW_PIN 15   // output
 
 // WATER LEVEL SENSOR
-#define WATER_SENSOR_PIN 12 // input
+#define WATER_SENSOR_PIN 22 // input
