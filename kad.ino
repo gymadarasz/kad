@@ -1,4 +1,3 @@
-#include <SoftwareSerial.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
@@ -263,11 +262,9 @@ void appLoopAll() {
 
 // OXYGEN SENSOR
 
-SoftwareSerial oxygenSerial(OXYGEN_RX_PIN, OXYGEN_TX_PIN);
-
 String doOxygenRead() {
-    if (oxygenSerial.available()) {
-        return oxygenSerial.readStringUntil('\r');
+    if (OXIGEN_SERIAL.available()) {
+        return OXIGEN_SERIAL.readStringUntil('\r');
     }
     return String("");
 }
@@ -294,7 +291,7 @@ void doSensorsCheck() {
     }
 }
 
-void doTemperatureControl() {
+void doTemperatureControl(float celsius, float fahrenheit) {
     if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
         float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
         if (temperature < app.user.temperature) doHeatingStart();
@@ -379,6 +376,7 @@ void doWaterFlowOpen() {
 void setup()
 {
     Serial.begin(SERIAL_BAUDRATE);
+    OXIGEN_SERIAL.begin(OXIGEN_SERIAL_BAUDRATE);
     ds.selectNext();
     wifi_connect(nullptr);
     server_init();
