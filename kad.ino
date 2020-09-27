@@ -392,7 +392,7 @@ void wifi_credentials_load(long addr = 0) {
 
 void wifi_credentials_store(long addr, String ssid, String password) {
     EEPROM.writeString(addr, ssid);
-    addr += wifi_credentials.ssid.length() + 1;
+    addr += ssid.length() + 1;
     EEPROM.writeString(addr, password);
     EEPROM.commit();
 }
@@ -404,10 +404,13 @@ void wifi_setup() {
         Serial.println("Type WiFi SSID:");
         while (!Serial.available()) delay(idelay);
         String ssid = Serial.readString();
-        Serial.println("Type WiFi password:");
+        ssid.trim();
+        Serial.println("Type WiFi Password:");
+        while (!Serial.available()) delay(idelay);
         String password = Serial.readString();
+        password.trim();
         wifi_credentials_store(wifiaddr, ssid, password);
-        Serial.println("Press reset to restart");
+        Serial.println("Credentials are saved, press reset to restart..");
         while(true);
     }
     wifi_credentials_load(wifiaddr);
