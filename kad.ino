@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
+#include <DS18B20.h>
 
 
 #include "config/app_config.h";
@@ -50,6 +51,16 @@ void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
 
 WebServer server(SERVER_PORT);
 
+void serverSend(int code, const char* content_type, const String& content) {
+    // Serial.print("Server Respond sending: ");
+    // Serial.print(code);
+    // Serial.print(" - (");
+    // Serial.print(content_type);
+    // Serial.println(")");
+    // Serial.println(content);
+    server.send(code, content_type, content);
+}
+
 void server_init() {
     server.on("/", onClientRequestRoot);
     server.on("/start", onClientRequestStart);
@@ -60,10 +71,14 @@ void server_init() {
     server.on("/change-colour", onClientRequestColourChange);
     server.on("/set-timer", onClientRequestSetTimre);
     server.onNotFound([]() {
-        server.send(404, "text/plain", "Not Found\n\n");
+        serverSend(404, "text/plain", "Not Found\n\n");
     });
     server.begin();
 }
+
+#define APP_UNIT_UNSET 0
+#define APP_UNIT_CELSIUS 1
+#define APP_UNIT_FAHRENHEIT 2
 
 struct app_current_data_s {
     String oxygen;
@@ -72,10 +87,17 @@ struct app_current_data_s {
     String remaining;
 };
 
-struct app_s {
+struct app_user_data_s {
     bool started;
+    int unit;
+    float temperature;
+};
+
+struct app_s {
     app_current_data_s current;
+    app_user_data_s user;
     long timerEnd;
+    long lastTemperatureCheck;
 };
 
 typedef struct app_s app_t;
@@ -83,17 +105,25 @@ typedef struct app_s app_t;
 app_t app;
 
 void app_init() {
-    app.started = false;
     app.current.oxygen = "na.";
     app.current.celsius = "na.";
     app.current.fahrenheit = "na.";
     app.current.remaining = "na.";
+    app.user.started = false;
+    app.user.unit = APP_UNIT_UNSET;
+    app.user.temperature = -1;
     app.timerEnd = 0;
+    app.lastTemperatureCheck = 0;
+    
+    pinMode(COLOUR_PIN, OUTPUT);
+    pinMode(HEATING_PIN, OUTPUT);
+    pinMode(WATER_FLOW_PIN, OUTPUT);
 }
 
 void onClientRequestRoot() {
+    Serial.println("Requested call: onClientRequestRoot");
     String resp;
-    if (!app.started) {
+    if (!app.user.started) {
         resp = index_html;
     } else {
         resp = panel_html;
@@ -101,19 +131,23 @@ void onClientRequestRoot() {
     resp.replace("{{ common_css }}", common_css);
     resp.replace("{{ common_js }}", common_js);
     resp.replace("{{ common_html }}", common_html);
-    server.send(200, "text/html", resp);
+    resp.replace("{{ APP_DATA_REFRESH_PERIOD }}", String(APP_DATA_REFRESH_PERIOD));
+    serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {
-    if (!appStart()) server.send(400, "text/plain", "Start failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestStart");
+    if (!appStart()) serverSend(400, "text/plain", "Start failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestStop() {
-    if (!appStop()) server.send(400, "text/plain", "Stop failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestStop");
+    if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
+    Serial.println("Requested call: onClientRequestGetData");
     String resp(R"RESPONSE_JSON({
         "oxygen": "{{ oxygen }}",
         "celsius": "{{ celsius }}",
@@ -124,30 +158,33 @@ void onClientRequestGetData() {
     resp.replace("{{ celsius }}", app.current.celsius);
     resp.replace("{{ fahrenheit }}", app.current.fahrenheit);
     resp.replace("{{ remaining }}", app.current.remaining);
-    server.send(200, "text/json", resp);
+    serverSend(200, "text/json", resp);
 }
 
 void onClientRequestSetCelsius() {
-    if (!server.hasArg("celsius")) server.send(400, "text/plain", "Celsius argument is missing\n\n");
+    Serial.println("Requested call: onClientRequestSetCelsius");
+    if (!server.hasArg("celsius")) serverSend(400, "text/plain", "Celsius argument is missing\n\n");
     else {
         int temperature = getTemperatureFromCelsius(server.arg("celsius").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
 
 void onClientRequestSetFahrenheit() {
-    if (!server.hasArg("fahrenheit")) server.send(400, "text/plain", "Fahrenheit argument is missing\n\n");
+    Serial.println("Requested call: onClientRequestSetFahrenheit");
+    if (!server.hasArg("fahrenheit")) serverSend(400, "text/plain", "Fahrenheit argument is missing\n\n");
     else {
         int temperature = getTemperatureFromFahrenheit(server.arg("fahrenheit").toFloat());
-        if (!appSetTemperature(temperature)) server.send(400, "text/plain", "Set temperature failed\n\n");
-        else server.send(200, "text/plain", "OK\n\n");
+        if (!appSetTemperature(temperature)) serverSend(400, "text/plain", "Set temperature failed\n\n");
+        else serverSend(200, "text/plain", "OK\n\n");
     }
 }
  
 void onClientRequestColourChange() {
-    if (!appColourChange()) server.send(400, "text/plain", "Colour change failed\n\n");
-    else server.send(200, "text/plain", "OK\n\n");
+    Serial.println("Requested call: onClientRequestColourChange");
+    if (!appColourChange()) serverSend(400, "text/plain", "Colour change failed\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestSetTimer() {
@@ -161,57 +198,105 @@ void onClientRequestSetTimer() {
 // helpers
 
 float getTemperatureFromCelsius(float celsius) {
-    // TODO calculate absolute temperature value from given celsius value
+    app.user.unit = APP_UNIT_CELSIUS;
     return celsius;
 }
 
 float getTemperatureFromFahrenheit(float fahrenheit) {
-    // TODO calculate absolute temperature value from given fahrenheit value
+    app.user.unit = APP_UNIT_FAHRENHEIT;
     return fahrenheit;
 }
 
 // app callbacks
 
 bool appStart() {
-    // TODO start system and return true, if any error occurred returns false
-    app.started = 1;
+    app.user.started = 1;
+    doTimerStart();
+    doWaterStart();
     return true;
 }
 
 bool appStop() {
-    // TODO stop system and return true, if any error occurred returns false
-    app.started = 0;
-    doTimerStart();
+    app.user.started = 0;
+    app.user.unit = APP_UNIT_UNSET;
+    doHeatingStop();
+    doWaterStop();
     return true;
 }
 
 bool appSetTemperature(float temperature) {
-    // TODO set temperature and return true, if any error occurred returns false
+    app.user.temperature = temperature;
     return true;
 }
 
 bool appColourChange() {
-    // TODO change colour and return true, if any error occurred returns false
+    doColourChange();
     return true;
 }
 
 // app loops
 
+void appLoopColourPulse() {
+    appLoopAll();
+}
+
 void appLoopConnecting() {
-    // TODO do it while esp re-connecting to wifi
-    doTimerCheck();
+    appLoopAll();
 }
 
 void appLoopConnected() {
-    // TODO do it when wifi connection is established
+    appLoopAll();
+}
+
+void appLoopAll() {
+    doTemperatureControl();
     doTimerCheck();
+    doWaterCheck();
+}
+
+// TEMPERATURE (DS18B20)
+
+DS18B20 ds(DS_PIN);
+
+void doTemperatureControl() {
+    long temperatureCheckTime = millis() / DS_CHECK_PERIOD;
+    if (temperatureCheckTime != app.lastTemperatureCheck) {
+        app.lastTemperatureCheck = temperatureCheckTime;
+        float celsius = ds.getTempC();
+        float fahrenheit = ds.getTempF();
+        if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
+            float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
+            if (temperature < app.user.temperature) doHeatingStart();
+            else doHeatingStop();
+        }
+
+        app.current.celsius = String(celsius);
+        app.current.fahrenheit = String(fahrenheit);
+    }
+}
+
+// heating
+
+void doHeatingStart() {
+    digitalWrite(HEATING_PIN, HIGH);
+}
+
+void doHeatingStop() {
+    digitalWrite(HEATING_PIN, LOW);
+}
+
+// COLOUR CHANGE
+
+void doColourChange() {
+    digitalWrite(COLOUR_PIN, HIGH);
+    cb_delay(COLOUR_DELAY, appLoopColourPulse);
+    digitalWrite(COLOUR_PIN, LOW);
 }
 
 // timer
 
 void doTimerStart() {
     app.timerEnd = millis() + WATER_TIMER;
-    doWaterStart();
 }
 
 void doTimerCheck() {
@@ -222,20 +307,17 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterStop();
     } else {
-        int mins = lefts / (60 * 1000);
-        int secs = lefts % (60 * 1000);
+        mins = lefts / (60 * 1000);
+        secs = lefts % (60 * 1000) / 1000;;
     }
 
-    String remaining("");
-    remaining += mins < 10 ? "0" : "";
-    remaining += String(mins);
-    remaining += ":";
-    remaining += secs < 10 ? "0" : "";
-    remaining += String(secs);
-    app.current.remaining = remaining; 
+    size_t size = 10;
+    char buff[size] = {0};
+    snprintf(buff, size, "%02d:%02d", mins, secs);
+    app.current.remaining = buff;
 }
 
-// water flow
+// water infill
 
 void doWaterStart() {
     digitalWrite(WATER_FLOW_PIN, HIGH);
@@ -245,6 +327,14 @@ void doWaterStop() {
     digitalWrite(WATER_FLOW_PIN, LOW);
 }
 
+// water level sensor
+
+void doWaterCheck() {
+    if (!digitalRead(WATER_SENSOR_PIN)) {
+        doWaterStop();
+    }
+}
+
 
 
 // SKETCH
@@ -252,6 +342,7 @@ void doWaterStop() {
 void setup()
 {
     Serial.begin(SERIAL_BAUDRATE);
+    ds.selectNext();
     wifi_connect(nullptr);
     server_init();
     app_init();
