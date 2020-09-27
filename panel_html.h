@@ -149,20 +149,24 @@ const char* panel_html = R"PANEL_HTML(
             // USER INTERFACE (INPUTS)
 
             function onTemperatureSettingsClick() {
-                var temperature = prompt('Please enter a temperature value:');
-                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature, function () {
-                    localStorage.setItem('temperature', temperature);
-                    localStorage.setItem('unit', 'celsius');
-                    setTemperatureView(temperature);
-                    setUnitView('&#176;C');
-                });
-                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature, function () {
-                    localStorage.setItem('temperature', temperature);
-                    localStorage.setItem('unit', 'fahrenheit');
-                    setTemperatureView(temperature);
-                    setUnitView('&#176;F');
-                });
-                else alert('Invalid value should be in between 35 and 45 Celsius or 95 and 104 Fahrenheit');
+                var temperature = parseInt(prompt('Please enter a temperature value:'));
+                if (temperature >= 35 && temperature <= 40) {
+                    apiSetCelsius(temperature, function () {
+                        localStorage.setItem('temperature', temperature);
+                        localStorage.setItem('unit', 'celsius');
+                        setTemperatureView(temperature);
+                        setUnitView('&#176;C');
+                    });
+                } else if (temperature >= 95 && temperature <= 104) {
+                    apiSetFahrenheit(temperature, function () {
+                        localStorage.setItem('temperature', temperature);
+                        localStorage.setItem('unit', 'fahrenheit');
+                        setTemperatureView(temperature);
+                        setUnitView('&#176;F');
+                    });
+                } else {
+                    message('Invalid value should be in between 35 and 45 Celsius or 95 and 104 Fahrenheit', 'error');
+                }
             }
 
 
@@ -177,8 +181,14 @@ const char* panel_html = R"PANEL_HTML(
             }
 
             function onTimerSettingsClick() {
-                var timer = prompt('Please enter a timer value in minutes:');
-                apiSetTimer(timer);
+                var timer = parseInt(prompt('Please enter a timer value in minutes:'));
+                if (timer > 0) {
+                    apiSetTimer(timer, function () {
+                        localStorage.setItem('timer', timer);
+                    });
+                } else {
+                    message('Invalid value should be greater than 0', 'error');
+                }
             }
 
             function onDocumentLoad() {
@@ -192,6 +202,17 @@ const char* panel_html = R"PANEL_HTML(
                         setRemainingView(r.remaining);
                     });
                 }, {{ APP_DATA_REFRESH_PERIOD }});
+
+                // clock emulation
+                setInterval(function() {
+                    var remaining = getRemainingView();
+                    var secs = parseInt(remaining.slice(-2)) - 1;
+                    if (!Number.isNaN(secs)) {
+                        if (secs < 0) secs = 0;
+                        var secsStr = "" + (secs < 10 ? "0" : "") + secs.toString();
+                        setRemainingView(remaining.slice(0, -2) + secsStr);
+                    }
+                }, 1000);
 
 
                 // set default temperature and unit to user preset
@@ -215,6 +236,11 @@ const char* panel_html = R"PANEL_HTML(
                 } else {
                     console.warn('temperature unit is unknown: ', unit);
                 }
+
+                // set default timer to user preset
+
+                var timer = localStorage.getItem('timer');
+                apiSetTimer(timer, function () {});
             }
 
             // USER INTERFACE (VIEWS)
@@ -233,6 +259,10 @@ const char* panel_html = R"PANEL_HTML(
 
             function setRemainingView(remaining) {
                 document.getElementById('remaining').innerHTML = remaining;
+            }
+
+            function getRemainingView() {
+                return document.getElementById('remaining').innerHTML;
             }
 
             function setTemperatureView(temperature) {

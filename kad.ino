@@ -69,7 +69,7 @@ void server_init() {
     server.on("/set-celsius", onClientRequestSetCelsius);
     server.on("/set-fahrenheit", onClientRequestSetFahrenheit);
     server.on("/change-colour", onClientRequestColourChange);
-    server.on("/set-timer", onClientRequestSetTimre);
+    server.on("/set-timer", onClientRequestSetTimer);
     server.onNotFound([]() {
         serverSend(404, "text/plain", "Not Found\n\n");
     });
