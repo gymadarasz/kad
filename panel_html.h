@@ -177,7 +177,7 @@ const char* panel_html = R"PANEL_HTML(
             }
 
             function onColourChangeClick() {
-                apiColourChange();
+                apiColourChange(function() {});
             }
 
             function onTimerSettingsClick() {
