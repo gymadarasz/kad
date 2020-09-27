@@ -264,10 +264,11 @@ void appLoopAll() {
 // OXYGEN SENSOR
 
 String doOxygenRead() {
-    if (OXIGEN_SERIAL.available()) {
-        return OXIGEN_SERIAL.readStringUntil('\r');
+    String ret("");
+    while (OXIGEN_SERIAL.available()) {
+        ret = OXIGEN_SERIAL.readStringUntil(13);
     }
-    return String("");
+    return ret;
 }
 
 // TEMPERATURE (DS18B20)
