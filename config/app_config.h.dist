@@ -15,6 +15,10 @@
 #define APP_FAHRENHEIT_MIN 95
 #define APP_FAHRENHEIT_MAX 104
 
+#define WIFI_SETUP_PIN 23   // input
+#define WIFI_SETUP_ON HIGH  // wifi setup mode
+#define WIFI_SETUP_OFF LOW  // normal workstation mode
+
 // COLOUR CHANGE
 #define COLOUR_PIN 4        // output
 #define COLOUR_DELAY 1000   // pulse length

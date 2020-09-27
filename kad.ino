@@ -2,10 +2,10 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <DS18B20.h>
+#include "EEPROM.h"
 
 
 #include "config/app_config.h";
-#include "config/wifi_config.h";
 #include "common_css.h";
 #include "common_js.h";
 #include "common_html.h";
@@ -16,24 +16,30 @@
 
 typedef void (*cb_delay_callback_func_t)(void);
 
+struct wifi_credentials_s {
+    String ssid;
+    String password;  
+};
+
+typedef struct wifi_credentials_s wifi_credentials_t;
+
 void cb_delay(long ms, cb_delay_callback_func_t callback = nullptr) {
     ms += millis();
     while(millis() < ms) if (callback) callback(); 
 }
 
-char* wifi_get_ssid() {
-    return WIFI_SSID; // TODO load from flash
-}
-
-char* wifi_get_password() {
-    return WIFI_PASSWORD; // TODO load from flash
-}
+wifi_credentials_t wifi_credentials;
 
 void wifi_connect(cb_delay_callback_func_t callback = nullptr) {
     Serial.print("\n\nConnecting to ");
-    Serial.println(wifi_get_ssid());
+    Serial.println(wifi_credentials.ssid);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(wifi_get_ssid(), wifi_get_password());
+    int strl = 100;
+    char ssid_buff[strl];
+    char password_buff[strl];
+    wifi_credentials.ssid.toCharArray(ssid_buff, strl);
+    wifi_credentials.password.toCharArray(password_buff, strl);
+    WiFi.begin(ssid_buff, password_buff);
     while (WiFi.status() != WL_CONNECTED)
     {
         cb_delay(500, callback);
@@ -52,12 +58,8 @@ void wifi_stablish(cb_delay_callback_func_t callback = nullptr) {
 WebServer server(SERVER_PORT);
 
 void serverSend(int code, const char* content_type, const String& content) {
-    // Serial.print("Server Respond sending: ");
-    // Serial.print(code);
-    // Serial.print(" - (");
-    // Serial.print(content_type);
-    // Serial.println(")");
-    // Serial.println(content);
+    Serial.print("Server Respond sending: ");
+    Serial.println(code);
     server.send(code, content_type, content);
 }
 
@@ -119,6 +121,7 @@ void app_init() {
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
+    pinMode(WIFI_SETUP_PIN, INPUT);
 }
 
 void onClientRequestRoot() {
@@ -372,17 +375,56 @@ void doWaterFlowOpen() {
     digitalWrite(WATER_FLOW_PIN, WATER_FLOW_OFF);
 }
 
+// EEPROM (for wifi ssid/password)
+
+void eeprom_init(long size = 1000) {
+    if (!EEPROM.begin(size)) {
+        Serial.println("EEPROM init failure.");
+        ESP.restart();
+    }
+}
+
+void wifi_credentials_load(long addr = 0) {
+    wifi_credentials.ssid = EEPROM.readString(addr);
+    addr += wifi_credentials.ssid.length() + 1;
+    wifi_credentials.password = EEPROM.readString(addr);
+}
+
+void wifi_credentials_store(long addr, String ssid, String password) {
+    EEPROM.writeString(addr, ssid);
+    addr += wifi_credentials.ssid.length() + 1;
+    EEPROM.writeString(addr, password);
+    EEPROM.commit();
+}
+
+void wifi_setup() {
+    const long idelay = 300;
+    const long wifiaddr = 0;
+    if (digitalRead(WIFI_SETUP_PIN) == WIFI_SETUP_ON) {
+        Serial.println("Type WiFi SSID:");
+        while (!Serial.available()) delay(idelay);
+        String ssid = Serial.readString();
+        Serial.println("Type WiFi password:");
+        String password = Serial.readString();
+        wifi_credentials_store(wifiaddr, ssid, password);
+        Serial.println("Press reset to restart");
+        while(true);
+    }
+    wifi_credentials_load(wifiaddr);
+}
 
 // SKETCH
 
 void setup()
 {
+    app_init();
     Serial.begin(SERIAL_BAUDRATE);
+    eeprom_init();
+    wifi_setup();
     OXIGEN_SERIAL.begin(OXIGEN_SERIAL_BAUDRATE);
     ds.selectNext();
     wifi_connect(nullptr);
     server_init();
-    app_init();
 }
 
 void loop()
