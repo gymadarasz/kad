@@ -306,6 +306,7 @@ void doTimerCheck() {
     if (lefts <= 0) {
         app.timerEnd = millis(); // block timer over turn
         doWaterStop();
+        doHeatingStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
