@@ -66,6 +66,10 @@ button:hover {
     display: none;
     text-align: center;
     border: 1px solid black;
+    z-index: 1000;
+    -webkit-box-shadow: 0px 5px 32px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 0px 5px 32px 0px rgba(0,0,0,0.75);
+    box-shadow: 0px 5px 32px 0px rgba(0,0,0,0.75);
 }
 #message.success {
     background: lightgreen;
@@ -75,6 +79,11 @@ button:hover {
 #message.error {
     background: red;
     color: white;
+}
+#message button {
+    font-size: 1em;
+    padding: 10px 20px;
+    margin: 20px 20px 0 20px;
 }
 
 )COMMON_CSS";

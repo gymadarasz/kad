@@ -189,13 +189,11 @@ void onClientRequestColourChange() {
 // helpers
 
 float getTemperatureFromCelsius(float celsius) {
-    // TODO calculate absolute temperature value from given celsius value
     app.user.unit = APP_UNIT_CELSIUS;
     return celsius;
 }
 
 float getTemperatureFromFahrenheit(float fahrenheit) {
-    // TODO calculate absolute temperature value from given fahrenheit value
     app.user.unit = APP_UNIT_FAHRENHEIT;
     return fahrenheit;
 }
@@ -203,7 +201,6 @@ float getTemperatureFromFahrenheit(float fahrenheit) {
 // app callbacks
 
 bool appStart() {
-    // TODO start system and return true, if any error occurred returns false
     app.user.started = 1;
     doTimerStart();
     doWaterStart();
@@ -211,7 +208,6 @@ bool appStart() {
 }
 
 bool appStop() {
-    // TODO stop system and return true, if any error occurred returns false
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
     doHeatingStop();
@@ -220,13 +216,11 @@ bool appStop() {
 }
 
 bool appSetTemperature(float temperature) {
-    // TODO set temperature and return true, if any error occurred returns false
     app.user.temperature = temperature;
     return true;
 }
 
 bool appColourChange() {
-    // TODO change colour and return true, if any error occurred returns false
     doColourChange();
     return true;
 }

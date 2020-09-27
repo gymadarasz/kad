@@ -52,17 +52,18 @@ function message(msg, type) {
     msgelm.classList.remove('success');
     msgelm.classList.remove('error');
     msgelm.classList.add(type);
+    msgelm.innerHTML = msg + '<br><button>Close</button>';
     show(id);
 }
 
 function messageSuccess(resp) {
-    var msg = resp.responseText.replace(/\s/g, "X");
+    var msg = resp.responseText.trim();
     if (msg) message(msg, 'success');
     else console.info(resp);
 }
 
 function messageFailed(resp) {
-    var msg = resp.responseText.replace(/\s/g, "X");
+    var msg = resp.responseText.trim();
     if (msg) message(msg, 'error');
     else console.error(resp);
 }

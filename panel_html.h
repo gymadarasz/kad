@@ -150,13 +150,13 @@ const char* panel_html = R"PANEL_HTML(
 
             function onTemperatureSettingsClick() {
                 var temperature = prompt('Please enter a temperature value:');
-                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature, function() {
+                if (temperature >= 35 && temperature <= 40) apiSetCelsius(temperature, function () {
                     localStorage.setItem('temperature', temperature);
                     localStorage.setItem('unit', 'celsius');
                     setTemperatureView(temperature);
                     setUnitView('&#176;C');
                 });
-                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature, function() {
+                else if (temperature >= 95 && temperature <= 104) apiSetFahrenheit(temperature, function () {
                     localStorage.setItem('temperature', temperature);
                     localStorage.setItem('unit', 'fahrenheit');
                     setTemperatureView(temperature);
@@ -194,11 +194,17 @@ const char* panel_html = R"PANEL_HTML(
                 var unit = localStorage.getItem('unit');
                 var temperature = localStorage.getItem('temperature');
                 if (unit == 'celsius') {
-                    apiSetCelsius(temperature);
+                    apiSetCelsius(temperature, function () {
+                        setTemperatureView(temperature);
+                        setUnitView('&#176;C');
+                    });
                     setTemperatureView(temperature);
                     setUnitView('&#176;C');
                 } else if (unit == 'fahrenheit') {
-                    apiSetFahrenheit(temperature);
+                    apiSetFahrenheit(temperature, function () {
+                        setTemperatureView(temperature);
+                        setUnitView('&#176;F');
+                    });
                     setTemperatureView(temperature);
                     setUnitView('&#176;F');
                 } else {
@@ -222,6 +228,14 @@ const char* panel_html = R"PANEL_HTML(
 
             function setRemainingView(remaining) {
                 document.getElementById('remaining').innerHTML = remaining;
+            }
+
+            function setTemperatureView(temperature) {
+                document.getElementById('temperature').innerHTML = temperature;
+            }
+
+            function setUnitView(unit) {
+                document.getElementById('unit').innerHTML = unit;
             }
 
             // COMMUNICATION
