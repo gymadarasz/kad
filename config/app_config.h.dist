@@ -40,6 +40,8 @@
 
 // WATER LEVEL SENSOR
 #define WATER_SENSOR_PIN 22     // input
+#define WATER_SENSOR_ON LOW     // close
+#define WATER_SENSOR_OFF HIGH   // open
 
 // WATER FLOW
 #define WATER_FLOW_PIN 2        // output
