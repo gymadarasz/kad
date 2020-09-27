@@ -132,6 +132,10 @@ void onClientRequestRoot() {
     resp.replace("{{ common_js }}", common_js);
     resp.replace("{{ common_html }}", common_html);
     resp.replace("{{ APP_DATA_REFRESH_PERIOD }}", String(APP_DATA_REFRESH_PERIOD));
+    resp.replace("{{ APP_CELSIUS_MIN }}", String(APP_CELSIUS_MIN));
+    resp.replace("{{ APP_CELSIUS_MAX }}", String(APP_CELSIUS_MAX));
+    resp.replace("{{ APP_FAHRENHEIT_MIN }}", String(APP_FAHRENHEIT_MIN));
+    resp.replace("{{ APP_FAHRENHEIT_MAX }}", String(APP_FAHRENHEIT_MAX));
     serverSend(200, "text/html", resp);
 }
 void onClientRequestStart() {

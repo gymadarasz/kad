@@ -150,14 +150,14 @@ const char* panel_html = R"PANEL_HTML(
 
             function onTemperatureSettingsClick() {
                 var temperature = parseInt(prompt('Please enter a temperature value:'));
-                if (temperature >= 35 && temperature <= 40) {
+                if (temperature >= {{ APP_CELSIUS_MIN }} && temperature <= {{ APP_CELSIUS_MAX }}) {
                     apiSetCelsius(temperature, function () {
                         localStorage.setItem('temperature', temperature);
                         localStorage.setItem('unit', 'celsius');
                         setTemperatureView(temperature);
                         setUnitView('&#176;C');
                     });
-                } else if (temperature >= 95 && temperature <= 104) {
+                } else if (temperature >= {{ APP_FAHRENHEIT_MIN }} && temperature <= {{ APP_FAHRENHEIT_MAX }}) {
                     apiSetFahrenheit(temperature, function () {
                         localStorage.setItem('temperature', temperature);
                         localStorage.setItem('unit', 'fahrenheit');
@@ -165,7 +165,7 @@ const char* panel_html = R"PANEL_HTML(
                         setUnitView('&#176;F');
                     });
                 } else {
-                    message('Invalid value should be in between 35 and 45 Celsius or 95 and 104 Fahrenheit', 'error');
+                    message('Invalid value should be in between {{ APP_CELSIUS_MIN }} and {{ APP_CELSIUS_MAX }} Celsius or {{ APP_FAHRENHEIT_MIN }} and {{ APP_FAHRENHEIT_MAX }} Fahrenheit', 'error');
                 }
             }
 
@@ -315,15 +315,15 @@ const char* panel_html = R"PANEL_HTML(
                 <h1>TEMPERATURE SETTINGS</h1>
                 <div class="vertical temperature">
                     <div class="top">
-                        <span>40</span>&#176;C<br>
-                        <span>104</span>&#176;F
+                        <span>{{ APP_CELSIUS_MAX }}</span>&#176;C<br>
+                        <span>{{ APP_FAHRENHEIT_MAX }}</span>&#176;F
                     </div>
                     <div class="middle">
                         <span id="temperature">...</span><span id="unit">...</span>
                     </div>
                     <div class="bottom">
-                        <span>35</span>&#176;C<br>
-                        <span>95</span>&#176;F
+                        <span>{{ APP_CELSIUS_MIN }}</span>&#176;C<br>
+                        <span>{{ APP_FAHRENHEIT_MIN }}</span>&#176;F
                     </div>
                 </div>
             </div>
