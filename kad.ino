@@ -117,7 +117,7 @@ void app_init() {
     
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
-    pinMode(WATER_FLOW_PIN, OUTPUT);
+    pinMode(WATER_FILL_PIN, OUTPUT);
 }
 
 void onClientRequestRoot() {
@@ -215,8 +215,9 @@ float getTemperatureFromFahrenheit(float fahrenheit) {
 
 bool appStart() {
     app.user.started = 1;
+    doWaterFlowClose();
+    doWaterFillStart();
     doTimerStart();
-    doWaterStart();
     return true;
 }
 
@@ -224,7 +225,8 @@ bool appStop() {
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
     doHeatingStop();
-    doWaterStop();
+    doWaterFillStop();
+    doWaterFlowOpen();
     return true;
 }
 
@@ -309,7 +311,7 @@ void doTimerCheck() {
     long lefts = app.timerEnd - millis();
     if (lefts <= 0) {
         app.timerEnd = millis(); // block timer over turn
-        doWaterStop();
+        doWaterFillStop();
         doHeatingStop();
     } else {
         mins = lefts / (60 * 1000);
@@ -324,22 +326,31 @@ void doTimerCheck() {
 
 // water infill
 
-void doWaterStart() {
-    digitalWrite(WATER_FLOW_PIN, HIGH);
+void doWaterFillStart() {
+    digitalWrite(WATER_FILL_PIN, HIGH);
 }
 
-void doWaterStop() {
-    digitalWrite(WATER_FLOW_PIN, LOW);
+void doWaterFillStop() {
+    digitalWrite(WATER_FILL_PIN, LOW);
 }
 
 // water level sensor
 
 void doWaterCheck() {
     if (!digitalRead(WATER_SENSOR_PIN)) {
-        doWaterStop();
+        doWaterFillStop();
     }
 }
 
+// water flow out
+
+void doWaterFlowClose() {
+    digitalWrite(WATER_FLOW_PIN, HIGH);
+}
+
+void doWaterFlowOpen() {
+    digitalWrite(WATER_FLOW_PIN, LOW);
+}
 
 
 // SKETCH
