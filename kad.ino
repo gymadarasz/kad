@@ -1,3 +1,4 @@
+#include <SoftwareSerial.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
@@ -97,7 +98,7 @@ struct app_s {
     app_current_data_s current;
     app_user_data_s user;
     long timerEnd;
-    long lastTemperatureCheck;
+    long lastSensorsCheck;
 };
 
 typedef struct app_s app_t;
@@ -113,7 +114,7 @@ void app_init() {
     app.user.unit = APP_UNIT_UNSET;
     app.user.temperature = -1;
     app.timerEnd = 0;
-    app.lastTemperatureCheck = 0;
+    app.lastSensorsCheck = 0;
     
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
@@ -255,29 +256,49 @@ void appLoopConnected() {
 }
 
 void appLoopAll() {
-    doTemperatureControl();
+    doSensorsCheck();
     doTimerCheck();
     doWaterCheck();
+}
+
+// OXYGEN SENSOR
+
+SoftwareSerial oxygenSerial(OXYGEN_RX_PIN, OXYGEN_TX_PIN);
+
+String doOxygenRead() {
+    if (oxygenSerial.available()) {
+        return oxygenSerial.readStringUntil('\r');
+    }
+    return String("");
 }
 
 // TEMPERATURE (DS18B20)
 
 DS18B20 ds(DS_PIN);
 
-void doTemperatureControl() {
-    long temperatureCheckTime = millis() / DS_CHECK_PERIOD;
-    if (temperatureCheckTime != app.lastTemperatureCheck) {
-        app.lastTemperatureCheck = temperatureCheckTime;
+void doSensorsCheck() {
+    long sensorsCheckTime = millis() / DS_CHECK_PERIOD;
+    if (sensorsCheckTime != app.lastSensorsCheck) {
+        app.lastSensorsCheck = sensorsCheckTime;
+
         float celsius = ds.getTempC();
         float fahrenheit = ds.getTempF();
-        if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
-            float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
-            if (temperature < app.user.temperature) doHeatingStart();
-            else doHeatingStop();
-        }
+        
+        doTemperatureControl(celsius, fahrenheit);
 
         app.current.celsius = String(celsius);
         app.current.fahrenheit = String(fahrenheit);
+
+        String oxygen = doOxygenRead();
+        if (oxygen != "") app.current.oxygen = oxygen;
+    }
+}
+
+void doTemperatureControl() {
+    if (app.user.started && app.user.unit != APP_UNIT_UNSET) {
+        float temperature = app.user.unit == APP_UNIT_CELSIUS ? celsius : fahrenheit;
+        if (temperature < app.user.temperature) doHeatingStart();
+        else doHeatingStop();
     }
 }
 
