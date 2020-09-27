@@ -118,6 +118,7 @@ void app_init() {
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
+    pinMode(WATER_FLOW_PIN, OUTPUT);
 }
 
 void onClientRequestRoot() {
