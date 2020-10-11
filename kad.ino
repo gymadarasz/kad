@@ -147,6 +147,9 @@ void app_init() {
     pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
     pinMode(WIFI_SETUP_PIN, INPUT);
+    pinMode(WATER_CIRCULAR_PIN, INPUT);
+    pinMode(WATER_SENSOR_PIN, INPUT);
+    pinMode(DS_PIN, INPUT);
 }
 
 void onClientRequestRoot() {
@@ -254,6 +257,7 @@ bool appStop() {
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
     doHeatingStop();
+    doCircularStop();
     doWaterFillStop();
     doWaterFlowOpen();
     return true;
@@ -283,6 +287,10 @@ void appLoopConnected() {
     appLoopAll();
 }
 
+void appLoopWaterCircularDelayed() {
+    appLoopAll();
+}
+
 void pin_outs_set() {
     for (int i=0; i<PIN_OUTS; i++) {
         if (app.pin_outs[i].changed) {
@@ -295,7 +303,7 @@ void pin_outs_set() {
 void appLoopAll() {
     doSensorsCheck();
     doTimerCheck();
-    doWaterCheck();
+    doWaterLevelCheck();
     pin_outs_set();
 }
 
@@ -363,6 +371,17 @@ void doHeatingStop() {
     set_pin(HEATING_PIN, HEATING_OFF);
 }
 
+// water circulator
+
+void doCircularStart() {
+    cb_delay(WATER_CIRCULAR_START_DELAY, appLoopWaterCircularDelayed);
+    set_pin(WATER_CIRCULAR_PIN, WATER_CIRCULAR_ON);
+}
+
+void doCircularStop() {
+    set_pin(WATER_CIRCULAR_PIN, WATER_CIRCULAR_OFF);
+}
+
 // COLOUR CHANGE
 
 void doColourChange() {
@@ -385,6 +404,7 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterFillStop();
         doHeatingStop();
+        doCircularStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
@@ -408,9 +428,12 @@ void doWaterFillStop() {
 
 // water level sensor
 
-void doWaterCheck() {
+void doWaterLevelCheck() {
     if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON) {
         doWaterFillStop();
+        doCircularStart();
+    } else {
+        doHeatingStop();
     }
 }
 

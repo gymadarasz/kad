@@ -51,3 +51,6 @@
 // OXYGEN
 #define OXIGEN_SERIAL Serial2           // hardware serial port class
 #define OXIGEN_SERIAL_BAUDRATE 9600     // sensor communication speed
+
+// WATER CIRCULAR
+#define WATER_CIRCULAR_PIN 21       // input
