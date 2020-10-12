@@ -95,7 +95,7 @@ struct app_user_data_s {
     float temperature;
 };
 
-#define PIN_OUTS 4
+#define PIN_OUTS 5
 
 struct pin_out_s {
     int pin;
@@ -142,12 +142,16 @@ void app_init() {
     app.pin_outs[3].value = WATER_FLOW_OFF;
     app.pin_outs[3].changed = true;
 
+    app.pin_outs[4].pin = WATER_CIRCULAR_PIN;
+    app.pin_outs[4].value = WATER_CIRCULAR_OFF;
+    app.pin_outs[4].changed = true;
+
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
+    pinMode(WATER_CIRCULAR_PIN, OUTPUT);
     pinMode(WIFI_SETUP_PIN, INPUT);
-    pinMode(WATER_CIRCULAR_PIN, INPUT);
     pinMode(WATER_SENSOR_PIN, INPUT);
     pinMode(DS_PIN, INPUT);
 }
