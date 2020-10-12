@@ -353,12 +353,12 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 
 void set_pin(int pin, bool value) {
     for(int i=0; i<PIN_OUTS; i++) {
-        if (pin != app.pin_outs[i].pin) {
+        if (pin == app.pin_outs[i].pin) {
             if (value != app.pin_outs[i].value) {
                 app.pin_outs[i].changed = true;
                 app.pin_outs[i].value = value;
-                return;
             }
+            return;
         }
     }
     Serial.print("ERROR: pin not found: ");
