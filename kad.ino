@@ -292,7 +292,11 @@ void appLoopConnected() {
 }
 
 void appLoopWaterCircularDelayed() {
-    appLoopAll();
+    doSensorsCheck();
+    doTimerCheck();
+    // doWaterLevelCheck();
+    pin_outs_set();
+    server.handleClient();
 }
 
 void pin_outs_set() {
@@ -309,6 +313,7 @@ void appLoopAll() {
     doTimerCheck();
     doWaterLevelCheck();
     pin_outs_set();
+    server.handleClient();
 }
 
 // OXYGEN SENSOR
@@ -510,5 +515,4 @@ void loop()
 {
     wifi_stablish(appLoopConnecting);
     appLoopConnected();
-    server.handleClient();
 }
