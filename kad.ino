@@ -115,6 +115,29 @@ typedef struct app_s app_t;
 
 app_t app;
 
+void pin_outs_set() {
+    for (int i=0; i<PIN_OUTS; i++) {
+        if (app.pin_outs[i].changed) {
+            digitalWrite(app.pin_outs[i].pin, app.pin_outs[i].value);
+            app.pin_outs[i].changed = false;
+        }
+    }
+}
+
+void set_pin(int pin, bool value) {
+    for(int i=0; i<PIN_OUTS; i++) {
+        if (pin == app.pin_outs[i].pin) {
+            if (value != app.pin_outs[i].value) {
+                app.pin_outs[i].changed = true;
+                app.pin_outs[i].value = value;
+            }
+            return;
+        }
+    }
+    Serial.print("ERROR: pin not found: ");
+    Serial.println(pin);
+}
+
 void app_init() {
     app.current.oxygen = "na.";
     app.current.celsius = "na.";
@@ -299,15 +322,6 @@ void appLoopWaterCircularDelayed() {
     server.handleClient();
 }
 
-void pin_outs_set() {
-    for (int i=0; i<PIN_OUTS; i++) {
-        if (app.pin_outs[i].changed) {
-            digitalWrite(app.pin_outs[i].pin, app.pin_outs[i].value);
-            app.pin_outs[i].changed = false;
-        }
-    }
-}
-
 void appLoopAll() {
     doSensorsCheck();
     doTimerCheck();
@@ -354,20 +368,6 @@ void doTemperatureControl(float celsius, float fahrenheit) {
         if (temperature < app.user.temperature) doHeatingStart();
         else doHeatingStop();
     }
-}
-
-void set_pin(int pin, bool value) {
-    for(int i=0; i<PIN_OUTS; i++) {
-        if (pin == app.pin_outs[i].pin) {
-            if (value != app.pin_outs[i].value) {
-                app.pin_outs[i].changed = true;
-                app.pin_outs[i].value = value;
-            }
-            return;
-        }
-    }
-    Serial.print("ERROR: pin not found: ");
-    Serial.println(pin);
 }
 
 // heating
