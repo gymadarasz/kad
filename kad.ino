@@ -303,7 +303,7 @@ bool appColourChange() {
 // app loops
 
 void appLoopColourPulse() {
-    doSensorsCheck();
+    // doSensorsCheck();
     doTimerCheck();
     // doWaterLevelCheck();
     pin_outs_set();
@@ -319,7 +319,7 @@ void appLoopConnected() {
 }
 
 void appLoopWaterCircularDelayed() {
-    doSensorsCheck();
+    // doSensorsCheck();
     doTimerCheck();
     // doWaterLevelCheck();
     pin_outs_set();
