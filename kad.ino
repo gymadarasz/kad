@@ -303,7 +303,11 @@ bool appColourChange() {
 // app loops
 
 void appLoopColourPulse() {
-    appLoopAll();
+    doSensorsCheck();
+    doTimerCheck();
+    // doWaterLevelCheck();
+    pin_outs_set();
+    server.handleClient();
 }
 
 void appLoopConnecting() {
