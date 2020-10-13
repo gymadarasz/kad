@@ -95,7 +95,7 @@ struct app_user_data_s {
     float temperature;
 };
 
-#define PIN_OUTS 5
+#define PIN_OUTS 4
 
 struct pin_out_s {
     int pin;
@@ -165,15 +165,11 @@ void app_init() {
     app.pin_outs[3].value = WATER_FLOW_OFF;
     app.pin_outs[3].changed = true;
 
-    app.pin_outs[4].pin = WATER_CIRCULAR_PIN;
-    app.pin_outs[4].value = WATER_CIRCULAR_OFF;
-    app.pin_outs[4].changed = true;
-
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
-    pinMode(WATER_CIRCULAR_PIN, OUTPUT);
+    pinMode(WATER_CIRCULAR_PIN, INPUT);
     pinMode(WIFI_SETUP_PIN, INPUT);
     pinMode(WATER_SENSOR_PIN, INPUT);
     pinMode(DS_PIN, INPUT);
@@ -284,7 +280,6 @@ bool appStop() {
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
     doHeatingStop();
-    doCircularStop();
     doWaterFillStop();
     doWaterFlowOpen();
     return true;
@@ -318,7 +313,7 @@ void appLoopConnected() {
     appLoopAll();
 }
 
-void appLoopWaterCircularDelayed() {
+void appLoopWaterFlowDelayed() {
     // doSensorsCheck();
     doTimerCheck();
     // doWaterLevelCheck();
@@ -384,17 +379,6 @@ void doHeatingStop() {
     set_pin(HEATING_PIN, HEATING_OFF);
 }
 
-// water circulator
-
-void doCircularStart() {
-    cb_delay(WATER_CIRCULAR_START_DELAY, appLoopWaterCircularDelayed);
-    set_pin(WATER_CIRCULAR_PIN, WATER_CIRCULAR_ON);
-}
-
-void doCircularStop() {
-    set_pin(WATER_CIRCULAR_PIN, WATER_CIRCULAR_OFF);
-}
-
 // COLOUR CHANGE
 
 void doColourChange() {
@@ -417,7 +401,6 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterFillStop();
         doHeatingStop();
-        doCircularStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
@@ -442,9 +425,10 @@ void doWaterFillStop() {
 // water level sensor
 
 void doWaterLevelCheck() {
-    if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON) {
+    if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON && 
+        digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_ON
+    ) {
         doWaterFillStop();
-        doCircularStart();
     } else {
         doHeatingStop();
     }
@@ -453,6 +437,7 @@ void doWaterLevelCheck() {
 // water flow out
 
 void doWaterFlowClose() {
+    cb_delay(WATER_CIRCULAR_START_DELAY, appLoopWaterFlowDelayed);
     set_pin(WATER_FLOW_PIN, WATER_FLOW_ON);
 }
 
