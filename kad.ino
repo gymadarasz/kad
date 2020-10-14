@@ -95,7 +95,7 @@ struct app_user_data_s {
     float temperature;
 };
 
-#define PIN_OUTS 4
+#define PIN_OUTS 5
 
 struct pin_out_s {
     int pin;
@@ -165,6 +165,11 @@ void app_init() {
     app.pin_outs[3].value = WATER_FLOW_OFF;
     app.pin_outs[3].changed = true;
 
+    app.pin_outs[4].pin = WATER_PUMP_PIN;
+    app.pin_outs[4].value = WATER_PUMP_OFF;
+    app.pin_outs[4].changed = true;
+
+    pinMode(WATER_PUMP_PIN, OUTPUT);
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
@@ -401,6 +406,7 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterFillStop();
         doHeatingStop();
+        doWaterPumpStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
@@ -425,25 +431,36 @@ void doWaterFillStop() {
 // water level sensor
 
 void doWaterLevelCheck() {
-    if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON && 
-        digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_ON
-    ) {
+    if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON) {
         doWaterFillStop();
-    } else {
-        doHeatingStop();
+        doWaterPumpStart();
+        if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF) {
+            doHeatingStop();
+        }
     }
 }
 
 // water flow out
 
 void doWaterFlowClose() {
-    cb_delay(WATER_CIRCULAR_START_DELAY, appLoopWaterFlowDelayed);
+    cb_delay(WATER_FLOW_START_DELAY, appLoopWaterFlowDelayed);
     set_pin(WATER_FLOW_PIN, WATER_FLOW_ON);
 }
 
 void doWaterFlowOpen() {
     set_pin(WATER_FLOW_PIN, WATER_FLOW_OFF);
 }
+
+// water pump
+
+void doWaterPumpStop() {
+    set_pin(WATER_PUMP_PIN, WATER_PUMP_OFF);
+}
+
+void doWaterPumpStart() {
+    set_pin(WATER_PUMP_PIN, WATER_PUMP_ON);
+}
+
 
 // EEPROM (for wifi ssid/password)
 
