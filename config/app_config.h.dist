@@ -45,15 +45,15 @@
 
 // WATER FLOW
 #define WATER_FLOW_PIN 2        // output
-#define WATER_FLOW_ON HIGH      // close
-#define WATER_FLOW_OFF LOW      // open
+#define WATER_FLOW_ON LOW      // close
+#define WATER_FLOW_OFF HIGH      // open
+#define WATER_FLOW_START_DELAY 5000 // waiting before circulator switched on
 
 // OXYGEN
 #define OXIGEN_SERIAL Serial2           // hardware serial port class
 #define OXIGEN_SERIAL_BAUDRATE 9600     // sensor communication speed
 
 // WATER CIRCULAR
-#define WATER_CIRCULAR_PIN 21   // output
+#define WATER_CIRCULAR_PIN 21   // input
 #define WATER_CIRCULAR_ON HIGH  // close
 #define WATER_CIRCULAR_OFF LOW  // open
-#define WATER_CIRCULAR_START_DELAY 5000 // waiting before circulator switched on
