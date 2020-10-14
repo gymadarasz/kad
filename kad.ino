@@ -443,7 +443,7 @@ void doWaterLevelCheck() {
 // water flow out
 
 void doWaterFlowClose() {
-    cb_delay(WATER_FLOW_START_DELAY, appLoopWaterFlowDelayed);
+//    cb_delay(WATER_FLOW_START_DELAY, appLoopWaterFlowDelayed);
     set_pin(WATER_FLOW_PIN, WATER_FLOW_ON);
 }
 
