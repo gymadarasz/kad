@@ -328,8 +328,8 @@ void appLoopWaterFlowDelayed() {
 
 void appLoopAll() {
     doSensorsCheck();
-    doTimerCheck();
     doWaterLevelCheck();
+    doTimerCheck();
     pin_outs_set();
     server.handleClient();
 }
