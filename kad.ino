@@ -138,6 +138,10 @@ void set_pin(int pin, bool value) {
     Serial.println(pin);
 }
 
+bool is_pin_set(int pin) {
+    return !app.pin_outs[pin].changed && app.pin_outs[pin].value;
+}
+
 void app_init() {
     app.current.oxygen = "na.";
     app.current.celsius = "na.";
@@ -207,8 +211,7 @@ void onClientRequestStart() {
 void onClientRequestStop() {
     Serial.println("Requested call: onClientRequestStop");
     if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
-    else 
-    serverSend(200, "text/plain", "OK\n\n");
+    else serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
@@ -379,11 +382,15 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 // heating
 
 void doHeatingStart() {
-    if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF) {   //!!!!!!!!csak ha megy a pumpa!!!!!!
-      set_pin(HEATING_PIN, HEATING_OFF);                           //!!!!!!!!csak ha megy a pumpa!!!!!!
-    } else {                                                       //!!!!!!!!csak ha megy a pumpa!!!!!!
-    set_pin(HEATING_PIN, HEATING_ON);
-    }                                                              //!!!!!!!!csak ha megy a pumpa!!!!!!
+    if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF || !is_pin_set(WATER_PUMP_PIN)) {
+        //!!!!!!!!csak ha megy a pumpa!!!!!!
+        set_pin(HEATING_PIN, HEATING_OFF);
+        //!!!!!!!!csak ha megy a pumpa!!!!!!
+    } else {                                                       
+        //!!!!!!!!csak ha megy a pumpa!!!!!!
+        set_pin(HEATING_PIN, HEATING_ON);
+    }                                                              
+    //!!!!!!!!csak ha megy a pumpa!!!!!!
 }
 
 void doHeatingStop() {

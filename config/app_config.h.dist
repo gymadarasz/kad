@@ -55,8 +55,8 @@
 
 // WATER CIRCULAR
 #define WATER_CIRCULAR_PIN 21   // input
-#define WATER_CIRCULAR_ON LOW  // close     !!!!!!!!!!!!!!!csere!!!!!!!!!!!!!!
-#define WATER_CIRCULAR_OFF HIGH  // open
+#define WATER_CIRCULAR_ON LOW   // close     !!!!!!!!!!!!!!!csere!!!!!!!!!!!!!!
+#define WATER_CIRCULAR_OFF HIGH // open
 
 // WATER PUMP
 #define WATER_PUMP_PIN 5        // output
