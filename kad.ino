@@ -207,7 +207,8 @@ void onClientRequestStart() {
 void onClientRequestStop() {
     Serial.println("Requested call: onClientRequestStop");
     if (!appStop()) serverSend(400, "text/plain", "Stop failed\n\n");
-    else serverSend(200, "text/plain", "OK\n\n");
+    else 
+    serverSend(200, "text/plain", "OK\n\n");
 }
 
 void onClientRequestGetData() {
@@ -287,6 +288,7 @@ bool appStop() {
     doHeatingStop();
     doWaterFillStop();
     doWaterFlowOpen();
+    doWaterPumpStop();
     return true;
 }
 
@@ -377,7 +379,11 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 // heating
 
 void doHeatingStart() {
+    if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF) {   //!!!!!!!!csak ha megy a pumpa!!!!!!
+      set_pin(HEATING_PIN, HEATING_OFF);                           //!!!!!!!!csak ha megy a pumpa!!!!!!
+    } else {                                                       //!!!!!!!!csak ha megy a pumpa!!!!!!
     set_pin(HEATING_PIN, HEATING_ON);
+    }                                                              //!!!!!!!!csak ha megy a pumpa!!!!!!
 }
 
 void doHeatingStop() {
