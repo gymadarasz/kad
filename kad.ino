@@ -286,6 +286,7 @@ bool appStart() {
 }
 
 bool appStop() {
+    app.timerEnd = millis();
     app.user.started = 0;
     app.user.unit = APP_UNIT_UNSET;
     doHeatingStop();
@@ -382,15 +383,11 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 // heating
 
 void doHeatingStart() {
-    if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF || !is_pin_set(WATER_PUMP_PIN)) {
-        //!!!!!!!!csak ha megy a pumpa!!!!!!
+    if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF || is_pin_set(WATER_PUMP_PIN) == WATER_PUMP_OFF) {
         set_pin(HEATING_PIN, HEATING_OFF);
-        //!!!!!!!!csak ha megy a pumpa!!!!!!
-    } else {                                                       
-        //!!!!!!!!csak ha megy a pumpa!!!!!!
+    } else {
         set_pin(HEATING_PIN, HEATING_ON);
-    }                                                              
-    //!!!!!!!!csak ha megy a pumpa!!!!!!
+    }
 }
 
 void doHeatingStop() {
@@ -471,7 +468,9 @@ void doWaterPumpStop() {
 }
 
 void doWaterPumpStart() {
-    set_pin(WATER_PUMP_PIN, WATER_PUMP_ON);
+    if (app.user.started == 1) {
+        set_pin(WATER_PUMP_PIN, WATER_PUMP_ON);
+    }
 }
 
 
