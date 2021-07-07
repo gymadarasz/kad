@@ -95,16 +95,48 @@ struct app_user_data_s {
     float temperature;
 };
 
+#define PIN_OUTS 5
+
+struct pin_out_s {
+    int pin;
+    bool value;
+    bool changed;
+};
+
 struct app_s {
     app_current_data_s current;
     app_user_data_s user;
     long timerEnd;
     long lastSensorsCheck;
+    pin_out_s pin_outs[PIN_OUTS];
 };
 
 typedef struct app_s app_t;
 
 app_t app;
+
+void pin_outs_set() {
+    for (int i=0; i<PIN_OUTS; i++) {
+        if (app.pin_outs[i].changed) {
+            digitalWrite(app.pin_outs[i].pin, app.pin_outs[i].value);
+            app.pin_outs[i].changed = false;
+        }
+    }
+}
+
+void set_pin(int pin, bool value) {
+    for(int i=0; i<PIN_OUTS; i++) {
+        if (pin == app.pin_outs[i].pin) {
+            if (value != app.pin_outs[i].value) {
+                app.pin_outs[i].changed = true;
+                app.pin_outs[i].value = value;
+            }
+            return;
+        }
+    }
+    Serial.print("ERROR: pin not found: ");
+    Serial.println(pin);
+}
 
 void app_init() {
     app.current.oxygen = "na.";
@@ -116,12 +148,36 @@ void app_init() {
     app.user.temperature = -1;
     app.timerEnd = 0;
     app.lastSensorsCheck = 0;
+
+    app.pin_outs[0].pin = COLOUR_PIN;
+    app.pin_outs[0].value = COLOUR_OFF;
+    app.pin_outs[0].changed = true;
     
+    app.pin_outs[1].pin = HEATING_PIN;
+    app.pin_outs[1].value = HEATING_OFF;
+    app.pin_outs[1].changed = true;
+
+    app.pin_outs[2].pin = WATER_FILL_PIN;
+    app.pin_outs[2].value = WATER_FILL_OFF;
+    app.pin_outs[2].changed = true;
+
+    app.pin_outs[3].pin = WATER_FLOW_PIN;
+    app.pin_outs[3].value = WATER_FLOW_OFF;
+    app.pin_outs[3].changed = true;
+
+    app.pin_outs[4].pin = WATER_PUMP_PIN;
+    app.pin_outs[4].value = WATER_PUMP_OFF;
+    app.pin_outs[4].changed = true;
+
+    pinMode(WATER_PUMP_PIN, OUTPUT);
     pinMode(COLOUR_PIN, OUTPUT);
     pinMode(HEATING_PIN, OUTPUT);
     pinMode(WATER_FILL_PIN, OUTPUT);
     pinMode(WATER_FLOW_PIN, OUTPUT);
+    pinMode(WATER_CIRCULAR_PIN, INPUT);
     pinMode(WIFI_SETUP_PIN, INPUT);
+    pinMode(WATER_SENSOR_PIN, INPUT);
+    pinMode(DS_PIN, INPUT);
 }
 
 void onClientRequestRoot() {
@@ -247,7 +303,11 @@ bool appColourChange() {
 // app loops
 
 void appLoopColourPulse() {
-    appLoopAll();
+    // doSensorsCheck();
+    doTimerCheck();
+    // doWaterLevelCheck();
+    pin_outs_set();
+    server.handleClient();
 }
 
 void appLoopConnecting() {
@@ -258,10 +318,20 @@ void appLoopConnected() {
     appLoopAll();
 }
 
+void appLoopWaterFlowDelayed() {
+    // doSensorsCheck();
+    doTimerCheck();
+    // doWaterLevelCheck();
+    pin_outs_set();
+    server.handleClient();
+}
+
 void appLoopAll() {
     doSensorsCheck();
+    doWaterLevelCheck();
     doTimerCheck();
-    doWaterCheck();
+    pin_outs_set();
+    server.handleClient();
 }
 
 // OXYGEN SENSOR
@@ -307,19 +377,19 @@ void doTemperatureControl(float celsius, float fahrenheit) {
 // heating
 
 void doHeatingStart() {
-    digitalWrite(HEATING_PIN, HEATING_ON);
+    set_pin(HEATING_PIN, HEATING_ON);
 }
 
 void doHeatingStop() {
-    digitalWrite(HEATING_PIN, HEATING_OFF);
+    set_pin(HEATING_PIN, HEATING_OFF);
 }
 
 // COLOUR CHANGE
 
 void doColourChange() {
-    digitalWrite(COLOUR_PIN, COLOUR_ON);
+    set_pin(COLOUR_PIN, COLOUR_ON);
     cb_delay(COLOUR_DELAY, appLoopColourPulse);
-    digitalWrite(COLOUR_PIN, COLOUR_OFF);
+    set_pin(COLOUR_PIN, COLOUR_OFF);
 }
 
 // timer
@@ -336,6 +406,7 @@ void doTimerCheck() {
         app.timerEnd = millis(); // block timer over turn
         doWaterFillStop();
         doHeatingStop();
+        doWaterPumpStop();
     } else {
         mins = lefts / (60 * 1000);
         secs = lefts % (60 * 1000) / 1000;;
@@ -350,30 +421,46 @@ void doTimerCheck() {
 // water infill
 
 void doWaterFillStart() {
-    digitalWrite(WATER_FILL_PIN, WATER_FILL_ON);
+    set_pin(WATER_FILL_PIN, WATER_FILL_ON);
 }
 
 void doWaterFillStop() {
-    digitalWrite(WATER_FILL_PIN, WATER_FILL_OFF);
+    set_pin(WATER_FILL_PIN, WATER_FILL_OFF);
 }
 
 // water level sensor
 
-void doWaterCheck() {
+void doWaterLevelCheck() {
     if (digitalRead(WATER_SENSOR_PIN) == WATER_SENSOR_ON) {
         doWaterFillStop();
+        doWaterPumpStart();
+        if (digitalRead(WATER_CIRCULAR_PIN) == WATER_CIRCULAR_OFF) {
+            doHeatingStop();
+        }
     }
 }
 
 // water flow out
 
 void doWaterFlowClose() {
-    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_ON);
+//    cb_delay(WATER_FLOW_START_DELAY, appLoopWaterFlowDelayed);
+    set_pin(WATER_FLOW_PIN, WATER_FLOW_ON);
 }
 
 void doWaterFlowOpen() {
-    digitalWrite(WATER_FLOW_PIN, WATER_FLOW_OFF);
+    set_pin(WATER_FLOW_PIN, WATER_FLOW_OFF);
 }
+
+// water pump
+
+void doWaterPumpStop() {
+    set_pin(WATER_PUMP_PIN, WATER_PUMP_OFF);
+}
+
+void doWaterPumpStart() {
+    set_pin(WATER_PUMP_PIN, WATER_PUMP_ON);
+}
+
 
 // EEPROM (for wifi ssid/password)
 
@@ -434,5 +521,4 @@ void loop()
 {
     wifi_stablish(appLoopConnecting);
     appLoopConnected();
-    server.handleClient();
 }
